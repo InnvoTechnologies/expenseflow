@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1767032629447,
+      "tag": "0000_aromatic_hobgoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767088772858,
+      "tag": "0001_aromatic_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767118060794,
+      "tag": "0002_vengeful_bloodstorm",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767254966525,
+      "tag": "0003_orange_the_initiative",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767258803079,
+      "tag": "0004_next_forgotten_one",
+      "breakpoints": true
+    }
+  ]
+}
