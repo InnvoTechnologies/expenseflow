@@ -102,7 +102,7 @@ export default function RegisterPage() {
           <p className="text-muted-foreground">Get started with your Expense Manager to track your expenses and manage your finances.</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
+          {/* <Button
             type="button"
             variant="outline"
             className="w-full flex items-center justify-center gap-2"
@@ -156,7 +156,7 @@ export default function RegisterPage() {
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">Or</span>
             </div>
-          </div>
+          </div> */}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
