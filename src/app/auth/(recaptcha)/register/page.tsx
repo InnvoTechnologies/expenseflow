@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,8 @@ import { signUp, signIn } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Logo } from "@/components/logo"
-import { ReCaptcha, type ReCaptchaRef } from "@/lib/recaptcha"
+import Script from "next/script"
+import Head from "next/head"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -25,7 +26,21 @@ export default function RegisterPage() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const recaptchaRef = useRef<ReCaptchaRef>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""
+  
+  useEffect(() => {
+    ;(window as any).onTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token)
+    }
+    ;(window as any).onTurnstileError = () => {
+      setTurnstileToken(null)
+      toast.error("Turnstile verification failed. Please try again.")
+    }
+    ;(window as any).onTurnstileExpired = () => {
+      setTurnstileToken(null)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,11 +52,8 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // Execute reCAPTCHA v3 with 'signup' action
-      const recaptchaToken = await recaptchaRef.current?.executeRecaptcha("signup");
-
-      if (!recaptchaToken) {
-        toast.error("reCAPTCHA verification failed. Please try again.")
+      if (!turnstileToken) {
+        toast.error("Turnstile verification required. Please complete the challenge.")
         setIsLoading(false);
         return;
       }
@@ -51,7 +63,7 @@ export default function RegisterPage() {
         name: formData.name,
         fetchOptions: {
           headers: {
-            "x-captcha-response": recaptchaToken,
+            "x-captcha-response": turnstileToken,
           },
         },
       })
@@ -77,6 +89,10 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Head>
+        <link rel="preconnect" href="https://challenges.cloudflare.com" />
+      </Head>
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
@@ -213,9 +229,17 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-
-          {/* Add ReCaptcha component */}
-          <ReCaptcha ref={recaptchaRef} />
+          <div className="mt-2">
+            <div
+              className="cf-turnstile"
+              data-sitekey={siteKey}
+              data-theme="auto"
+              data-size="normal"
+              data-callback="onTurnstileSuccess"
+              data-error-callback="onTurnstileError"
+              data-expired-callback="onTurnstileExpired"
+            ></div>
+          </div>
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground">

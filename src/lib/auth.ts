@@ -100,10 +100,14 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET || "your-secret-key-here",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   plugins: [ 
+    // captcha({ 
+    //     provider: "google-recaptcha", 
+    //     secretKey: process.env.RECAPTCHA_SECRET_KEY!,
+    //     minScore: 0.5, // reCAPTCHA v3 score threshold (0.0 to 1.0)
+    // }),
     captcha({ 
-        provider: "google-recaptcha", 
-        secretKey: process.env.RECAPTCHA_SECRET_KEY!,
-        minScore: 0.5, // reCAPTCHA v3 score threshold (0.0 to 1.0)
+            provider: "cloudflare-turnstile",
+            secretKey: process.env.TURNSTILE_SECRET_KEY!, 
     }),
     organizationPlugin({
       // Auto-create organization when user registers

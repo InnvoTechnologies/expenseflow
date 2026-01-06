@@ -1,6 +1,5 @@
 "use client"
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { ReCaptchaProvider } from '@/hooks/recaptcha-provider';
 import { useAuth } from '@/hooks/use-auth';
 import { redirect } from 'next/navigation';
 import React, { useEffect } from 'react';
@@ -31,9 +30,9 @@ const AuthLayout = ({children}: {children: React.ReactNode}) => {
     }
 
     return (
-        <ReCaptchaProvider>
+        <>
             {children}
-        </ReCaptchaProvider>
+        </>
     );
 };
 

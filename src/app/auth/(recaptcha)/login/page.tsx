@@ -14,8 +14,9 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useAuthContext } from "@/components/auth-provider"
 import { Logo } from "@/components/logo"
-import { ReCaptcha, type ReCaptchaRef } from "@/lib/recaptcha"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
+import Script from "next/script"
+import Head from "next/head"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -26,13 +27,13 @@ export default function LoginPage() {
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
   const router = useRouter()
   const { refreshUser } = useAuthContext()
-  const recaptchaRef = useRef<ReCaptchaRef>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""
   
   // OTP specific states
   const [code, setCode] = useState("")
   const [isCodeSent, setIsCodeSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
-  const [recaptchaRetryCount, setRecaptchaRetryCount] = useState(0)
   const [activeTab, setActiveTab] = useState("password")
   
   // Check for tab query parameter
@@ -43,6 +44,19 @@ export default function LoginPage() {
       setActiveTab('otp')
     }
   }, [])
+  
+  useEffect(() => {
+    ;(window as any).onTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token)
+    }
+    ;(window as any).onTurnstileError = () => {
+      setTurnstileToken(null)
+      toast.error("Turnstile verification failed. Please try again.")
+    }
+    ;(window as any).onTurnstileExpired = () => {
+      setTurnstileToken(null)
+    }
+  }, [])
 
   // Password login
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -50,12 +64,10 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const recaptchaToken = await recaptchaRef.current?.executeRecaptcha("login")
-            
-      if (!recaptchaToken) {
-          toast.error("reCAPTCHA verification failed. Please try again.")
-          setIsLoading(false)
-          return
+      if (!turnstileToken) {
+        toast.error("Turnstile verification required. Please complete the challenge.")
+        setIsLoading(false)
+        return
       }
 
       const result = await signIn.email({
@@ -63,7 +75,7 @@ export default function LoginPage() {
         password,
         fetchOptions: { 
           headers: { 
-              "x-captcha-response": recaptchaToken,
+              "x-captcha-response": turnstileToken,
           }, 
         },
       })
@@ -148,63 +160,20 @@ export default function LoginPage() {
       return
     }
 
-    if (!recaptchaRef.current) {
-      toast.error("reCAPTCHA is not initialized. Please refresh the page and try again.")
+    if (!turnstileToken) {
+      toast.error("Turnstile verification required. Please complete the challenge.")
       setIsLoading(false)
       return
     }
 
     setIsLoading(true)
     try {
-      // Execute reCAPTCHA v3 with 'signin' action
-      const recaptchaToken = await recaptchaRef.current.executeRecaptcha("signin")
-            
-      if (!recaptchaToken) {
-        if (recaptchaRetryCount < 2) {
-          setRecaptchaRetryCount(prev => prev + 1)
-          toast.error(`reCAPTCHA verification failed. Retrying... (${recaptchaRetryCount + 1}/3)`)
-          // Wait a bit before retrying
-          setTimeout(() => {
-            setIsLoading(false)
-          }, 1000)
-          return
-        } else {
-          // After multiple failures, try without reCAPTCHA as a fallback
-          toast.warning("reCAPTCHA failed, attempting fallback authentication...")
-          
-          try {
-            const result = await signIn.emailOtp({
-              email: email.trim(),
-              otp: code.trim(),
-              fetchOptions: { 
-                headers: {}, 
-              },
-            })
-
-            if (result.error) {
-              toast.error(result.error.message || "Invalid verification code")
-            } else {
-              handleSuccessfulLogin()
-            }
-          } catch (fallbackError) {
-            toast.error("Authentication failed. Please try again or contact support.")
-          }
-          
-          setRecaptchaRetryCount(0)
-          setIsLoading(false)
-          return
-        }
-      }
-
-      // Reset retry count on success
-      setRecaptchaRetryCount(0)
-
       const result = await signIn.emailOtp({
         email: email.trim(),
         otp: code.trim(),
         fetchOptions: { 
           headers: { 
-              "x-captcha-response": recaptchaToken,
+              "x-captcha-response": turnstileToken,
           }, 
         },
       })
@@ -243,7 +212,6 @@ export default function LoginPage() {
 
   const handleResendCode = async () => {
     if (countdown > 0) return
-    setRecaptchaRetryCount(0)
     await handleSendCode()
   }
 
@@ -251,11 +219,14 @@ export default function LoginPage() {
     setIsCodeSent(false)
     setCode("")
     setCountdown(0)
-    setRecaptchaRetryCount(0)
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Head>
+        <link rel="preconnect" href="https://challenges.cloudflare.com" />
+      </Head>
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
       <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
         <DialogContent>
           <DialogHeader>
@@ -398,6 +369,17 @@ export default function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
+                <div className="mt-2">
+                  <div
+                    className="cf-turnstile"
+                    data-sitekey={siteKey}
+                    data-theme="auto"
+                    data-size="normal"
+                    data-callback="onTurnstileSuccess"
+                    data-error-callback="onTurnstileError"
+                    data-expired-callback="onTurnstileExpired"
+                  ></div>
+                </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
@@ -462,22 +444,6 @@ export default function LoginPage() {
                     {isLoading ? "Verifying..." : "Sign In"}
                   </Button>
 
-                  {recaptchaRetryCount > 0 && (
-                    <div className="text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setRecaptchaRetryCount(0)
-                          setIsLoading(false)
-                        }}
-                        className="text-sm"
-                      >
-                        Reset reCAPTCHA
-                      </Button>
-                    </div>
-                  )}
-
                   <div className="text-center space-y-2">
                     <Button
                       variant="ghost"
@@ -505,9 +471,6 @@ export default function LoginPage() {
               )}
             </TabsContent>
           </Tabs>
-          
-          {/* Add ReCaptcha component */}
-          <ReCaptcha ref={recaptchaRef} />
           
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
