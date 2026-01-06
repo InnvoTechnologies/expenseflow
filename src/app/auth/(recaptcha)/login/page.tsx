@@ -65,7 +65,7 @@ export default function LoginPage() {
     
     try {
       if (!turnstileToken) {
-        toast.error("Turnstile verification required. Please complete the challenge.")
+        toast.error("Turnstile verification required. Please refresh the page")
         setIsLoading(false)
         return
       }
@@ -161,7 +161,7 @@ export default function LoginPage() {
     }
 
     if (!turnstileToken) {
-      toast.error("Turnstile verification required. Please complete the challenge.")
+      toast.error("Turnstile verification required. Please refresh the page")
       setIsLoading(false)
       return
     }

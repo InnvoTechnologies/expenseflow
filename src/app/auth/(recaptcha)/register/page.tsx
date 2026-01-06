@@ -53,7 +53,7 @@ export default function RegisterPage() {
 
     try {
       if (!turnstileToken) {
-        toast.error("Turnstile verification required. Please complete the challenge.")
+        toast.error("Turnstile verification required. Please refresh the page")
         setIsLoading(false);
         return;
       }
