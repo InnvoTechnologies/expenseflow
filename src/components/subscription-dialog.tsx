@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Check, Star, Wallet, CreditCard, Tag, FileDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import posthog from "posthog-js"
 
 interface Plan {
   name: string
@@ -38,12 +39,24 @@ export function SubscriptionDialog({ plan, isYearly, children }: SubscriptionDia
 
   const handleSubscribe = async () => {
     setIsLoading(true)
+
+    // Track subscription plan selected
+    posthog.capture('subscription_plan_selected', {
+      plan_name: plan.name,
+      billing_cycle: isYearly ? 'yearly' : 'monthly',
+      price: typeof plan.price[isYearly ? "yearly" : "monthly"] === 'number'
+        ? plan.price[isYearly ? "yearly" : "monthly"]
+        : 'custom',
+      is_popular_plan: plan.popular,
+      is_trial: plan.cta.includes('trial'),
+    });
+
     // TODO: Implement actual subscription logic
     console.log(`Subscribing to ${plan.name} plan (${isYearly ? 'yearly' : 'monthly'})`)
-    
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000))
-    
+
     setIsLoading(false)
     setIsOpen(false)
     // TODO: Show success message and redirect

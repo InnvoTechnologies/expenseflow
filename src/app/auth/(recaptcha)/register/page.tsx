@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { Logo } from "@/components/logo"
 import Script from "next/script"
 import Head from "next/head"
+import posthog from "posthog-js"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -28,19 +29,67 @@ export default function RegisterPage() {
   const router = useRouter()
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  const [isTurnstileLoaded, setIsTurnstileLoaded] = useState(false)
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0)
   
   useEffect(() => {
-    ;(window as any).onTurnstileSuccess = (token: string) => {
-      setTurnstileToken(token)
-    }
-    ;(window as any).onTurnstileError = () => {
-      setTurnstileToken(null)
-      toast.error("Turnstile verification failed. Please try again.")
-    }
-    ;(window as any).onTurnstileExpired = () => {
-      setTurnstileToken(null)
+    // Check if script is already loaded
+    if ((window as any).turnstile) {
+      setIsTurnstileLoaded(true)
     }
   }, [])
+
+  useEffect(() => {
+    console.log("Turnstile token updated:", turnstileToken)
+  }, [turnstileToken])
+
+  useEffect(() => {
+    if (!turnstileRef.current || !siteKey || !isTurnstileLoaded) return
+
+    let widgetId: string | null = null
+    const target = turnstileRef.current
+
+    // Clean container before rendering
+    target.innerHTML = ""
+
+    try {
+      if ((window as any).turnstile) {
+        widgetId = (window as any).turnstile.render(target, {
+          sitekey: siteKey,
+          callback: (token: string) => {
+            console.log("Turnstile success", token)
+            setTurnstileToken(token)
+          },
+          "error-callback": () => {
+            setTurnstileToken(null)
+            toast.error("Turnstile verification failed. Please try again.")
+          },
+          "expired-callback": () => {
+            setTurnstileToken(null)
+          },
+          theme: 'auto'
+        })
+      }
+    } catch (error) {
+      console.error("Turnstile render error:", error)
+    }
+
+    return () => {
+      if (widgetId && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId)
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+  }, [siteKey, isTurnstileLoaded, turnstileResetKey])
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null)
+    setTurnstileResetKey(prev => prev + 1)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +102,8 @@ export default function RegisterPage() {
 
     try {
       if (!turnstileToken) {
-        toast.error("Turnstile verification required. Please refresh the page")
+        toast.error("Turnstile verification required. Please complete the security check.")
+        resetTurnstile()
         setIsLoading(false);
         return;
       }
@@ -69,15 +119,38 @@ export default function RegisterPage() {
       })
 
       if (result.error) {
+        resetTurnstile()
         toast.error(result.error.message || "Registration failed")
+
+        // Track failed signup attempt
+        posthog.capture('user_signup_failed', {
+          error_message: result.error.message || "Registration failed",
+        });
       } else {
+        // Track successful signup
+        posthog.capture('user_signed_up', {
+          signup_method: 'email',
+          email: formData.email,
+          name: formData.name,
+        });
+
+        // Identify user in PostHog
+        posthog.identify(formData.email, {
+          email: formData.email,
+          name: formData.name,
+        });
+
         // With requireEmailVerification=true, user must verify before login
         toast.success("Account created. Please verify your email.")
         router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
       }
     } catch (error) {
+      resetTurnstile()
       toast.error("An error occurred during registration")
       console.error("Registration error:", error)
+
+      // Track registration error
+      posthog.captureException(error as Error);
     } finally {
       setIsLoading(false)
     }
@@ -92,7 +165,12 @@ export default function RegisterPage() {
       <Head>
         <link rel="preconnect" href="https://challenges.cloudflare.com" />
       </Head>
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+      <Script 
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js" 
+        async 
+        defer 
+        onLoad={() => setIsTurnstileLoaded(true)}
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
@@ -230,15 +308,7 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-2">
-            <div
-              className="cf-turnstile"
-              data-sitekey={siteKey}
-              data-theme="auto"
-              data-size="normal"
-              data-callback="onTurnstileSuccess"
-              data-error-callback="onTurnstileError"
-              data-expired-callback="onTurnstileExpired"
-            ></div>
+            <div ref={turnstileRef} className="min-h-[65px]"></div>
           </div>
 
           <div className="text-center">

@@ -2,6 +2,7 @@ import { signOut } from '@/lib/auth-client';
 import { useAuthContext } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
+import posthog from 'posthog-js';
 
 export function useAuth() {
   const { user, loading, refreshUser } = useAuthContext();
@@ -9,9 +10,13 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
+      // Track logout event before resetting PostHog
+      posthog.capture('user_logged_out');
+      posthog.reset();
+
       // First sign out from the API
       await signOut();
-      
+
       // Then clear local user state
       await refreshUser();
       

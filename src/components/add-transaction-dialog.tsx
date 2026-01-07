@@ -39,6 +39,7 @@ import { useCurrency } from "@/hooks/use-currency"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api-client"
 import { useOrganizationScope } from "@/hooks/use-organization-scope"
+import posthog from "posthog-js"
 
 // Schemas
 const baseTransactionSchema = z.object({
@@ -198,16 +199,35 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
       const res = await apiClient.post("/transactions", values)
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       queryClient.invalidateQueries({ queryKey: ["insights"] })
       queryClient.invalidateQueries({ queryKey: ["accounts"] })
       toast.success("Transaction created successfully")
+
+      // Track transaction creation
+      const selectedCategory = categories.find((c: any) => c.id === variables.categoryId);
+      const selectedAccount = accounts.find((a: any) => a.id === variables.accountId);
+
+      posthog.capture('transaction_created', {
+        transaction_type: variables.type,
+        transaction_amount: parseFloat(variables.amount),
+        transaction_category: selectedCategory?.name,
+        transaction_account: selectedAccount?.name,
+        has_description: !!variables.description,
+        has_fee: !!variables.feeAmount && parseFloat(variables.feeAmount) > 0,
+      });
+
       setOpen(false)
       form.reset()
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      toast.error(error.message)
+
+      // Track transaction creation error
+      posthog.captureException(error as Error);
+    },
   })
 
   const editMutation = useMutation({

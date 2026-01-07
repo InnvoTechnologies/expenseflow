@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api-client"
+import posthog from "posthog-js"
 
 function TransactionsPage() {
   const { formatAmount: formatCurrency } = useCurrency()
@@ -36,15 +37,28 @@ function TransactionsPage() {
       const res = await apiClient.delete(`/transactions/${id}`)
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_, transactionId) => {
+      // Find the deleted transaction for tracking purposes
+      const deletedTransaction = transactions.find((t: any) => t.id === transactionId);
+
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       queryClient.invalidateQueries({ queryKey: ["insights"] })
       queryClient.invalidateQueries({ queryKey: ["accounts"] }) // Refresh balances
       toast.success("Transaction deleted successfully")
+
+      // Track transaction deletion
+      posthog.capture('transaction_deleted', {
+        transaction_type: deletedTransaction?.type,
+        transaction_amount: deletedTransaction?.amount,
+        transaction_category: deletedTransaction?.category?.name,
+      });
     },
     onError: (error) => {
       toast.error(error.message)
+
+      // Track deletion error
+      posthog.captureException(error as Error);
     },
   })
 

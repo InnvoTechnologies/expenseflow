@@ -8,6 +8,7 @@ import { ChatMessage } from "@/components/ai/ChatMessage";
 import { ConfirmationDialog } from "@/components/ai/ConfirmationDialog";
 import { Send, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 interface Message {
     role: "user" | "assistant";
@@ -129,6 +130,12 @@ export default function AIAssistantPage() {
         const userMessage = input.trim();
         setInput("");
 
+        // Track AI assistant message sent
+        posthog.capture('ai_assistant_message_sent', {
+            message_length: userMessage.length,
+            conversation_length: messages.length,
+        });
+
         // Add user message to chat
         setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
 
@@ -141,6 +148,12 @@ export default function AIAssistantPage() {
 
         setShowConfirmation(false);
         setIsLoading(true);
+
+        // Track AI transaction confirmation attempt
+        posthog.capture('ai_transaction_confirmed', {
+            tool_name: pendingToolCall.name,
+            tool_params: pendingToolCall.params,
+        });
 
         try {
             const response = await fetch("/api/chat", {
@@ -169,6 +182,12 @@ export default function AIAssistantPage() {
                         content: `Error: ${data.error}`,
                     },
                 ]);
+
+                // Track AI transaction error
+                posthog.capture('ai_transaction_failed', {
+                    tool_name: pendingToolCall.name,
+                    error_message: data.error,
+                });
             } else if (data.success) {
                 setMessages((prev) => [
                     ...prev,
@@ -178,10 +197,18 @@ export default function AIAssistantPage() {
                     },
                 ]);
                 toast.success("Transaction created successfully!");
+
+                // Track successful AI transaction
+                posthog.capture('ai_transaction_success', {
+                    tool_name: pendingToolCall.name,
+                });
             }
         } catch (error) {
             console.error("Error confirming action:", error);
             toast.error("Failed to execute action. Please try again.");
+
+            // Track error
+            posthog.captureException(error as Error);
         } finally {
             setPendingToolCall(null);
             setIsLoading(false);

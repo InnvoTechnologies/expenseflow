@@ -13,6 +13,7 @@ import { Plus, Building2, Users, Calendar, Settings, Edit, Trash2 } from "lucide
 import { useAuth } from "@/hooks/use-auth";
 import { organizationClient } from "@/lib/organization-client";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 export type Organization = {
   id: string;
@@ -63,10 +64,19 @@ export default function OrganizationsPage() {
         setNewOrgName("");
         setNewOrgSlug("");
         toast.success("Organization created successfully");
+
+        // Track organization creation
+        posthog.capture('organization_created', {
+          organization_name: newOrgName.trim(),
+          organization_slug: newOrgSlug.trim(),
+        });
       }
     } catch (error) {
       console.error("Error creating organization:", error);
       toast.error("Failed to create organization");
+
+      // Track organization creation error
+      posthog.captureException(error as Error);
     } finally {
       setIsCreating(false);
     }
@@ -77,12 +87,27 @@ export default function OrganizationsPage() {
       await setActiveOrganization(org);
       if (org) {
         toast.success(`Switched to ${org.name}`);
+
+        // Track organization switch
+        posthog.capture('organization_switched', {
+          organization_name: org.name,
+          organization_id: org.id,
+          switch_type: 'to_organization',
+        });
       } else {
         toast.success("Switched to personal account");
+
+        // Track switch to personal account
+        posthog.capture('organization_switched', {
+          switch_type: 'to_personal',
+        });
       }
     } catch (error) {
       console.error("Error setting active organization:", error);
       toast.error("Failed to switch organization");
+
+      // Track organization switch error
+      posthog.captureException(error as Error);
     }
   };
 
