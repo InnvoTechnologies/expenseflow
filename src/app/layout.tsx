@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { Analytics } from "@vercel/analytics/next"
+import { PostHogProvider } from "@/hooks/PostHogProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,7 +38,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
         <Providers>
+          <PostHogProvider>
           {children}
+          </PostHogProvider>
         </Providers>
         <Analytics/>
         <Toaster 
