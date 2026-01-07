@@ -57,6 +57,7 @@ import {
 import { useCurrency } from "@/hooks/use-currency"
 import { withProtection } from "@/lib/with-protection"
 import { apiClient } from "@/lib/api-client"
+import posthog from "posthog-js"
 
 // Get all currencies and sort them
 function getCurrencyList() {
@@ -120,13 +121,24 @@ function AccountsPage() {
       const res = await apiClient.post("/accounts", values)
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] })
       toast.success("Account created successfully")
+
+      // Track account creation
+      posthog.capture('account_created', {
+        account_type: variables.type,
+        account_currency: variables.currency,
+        is_default: variables.isDefault,
+      });
+
       setIsDialogOpen(false)
     },
     onError: (error) => {
       toast.error(error.message)
+
+      // Track account creation error
+      posthog.captureException(error as Error);
     },
   })
 
@@ -153,12 +165,24 @@ function AccountsPage() {
       const res = await apiClient.delete(`/accounts/${id}`)
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_, accountId) => {
+      // Find deleted account for tracking
+      const deletedAccount = accounts?.find((a) => a.id === accountId);
+
       queryClient.invalidateQueries({ queryKey: ["accounts"] })
       toast.success("Account deleted successfully")
+
+      // Track account deletion
+      posthog.capture('account_deleted', {
+        account_type: deletedAccount?.type,
+        account_currency: deletedAccount?.currency,
+      });
     },
     onError: (error) => {
       toast.error(error.message)
+
+      // Track account deletion error
+      posthog.captureException(error as Error);
     },
   })
 

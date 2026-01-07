@@ -17,6 +17,7 @@ import { Logo } from "@/components/logo"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 import Script from "next/script"
 import Head from "next/head"
+import posthog from "posthog-js"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -29,12 +30,20 @@ export default function LoginPage() {
   const { refreshUser } = useAuthContext()
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  const [isTurnstileLoaded, setIsTurnstileLoaded] = useState(false)
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0)
   
   // OTP specific states
   const [code, setCode] = useState("")
   const [isCodeSent, setIsCodeSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [activeTab, setActiveTab] = useState("password")
+  
+  const resetTurnstile = () => {
+    setTurnstileToken(null)
+    setTurnstileResetKey(prev => prev + 1)
+  }
   
   // Check for tab query parameter
   useEffect(() => {
@@ -46,29 +55,57 @@ export default function LoginPage() {
   }, [])
   
   useEffect(() => {
-    ;(window as any).onTurnstileSuccess = (token: string) => {
-      setTurnstileToken(token)
-    }
-    ;(window as any).onTurnstileError = () => {
-      setTurnstileToken(null)
-      if ((window as any).turnstile) {
-        (window as any).turnstile.reset()
-      }
-    }
-    ;(window as any).onTurnstileExpired = () => {
-      setTurnstileToken(null)
-      if ((window as any).turnstile) {
-        (window as any).turnstile.reset()
-      }
+    // Check if script is already loaded
+    if ((window as any).turnstile) {
+      setIsTurnstileLoaded(true)
     }
   }, [])
 
-  const resetTurnstile = () => {
-    setTurnstileToken(null)
-    if ((window as any).turnstile) {
-      (window as any).turnstile.reset()
+  useEffect(() => {
+    console.log("Turnstile token updated:", turnstileToken)
+  }, [turnstileToken])
+
+  useEffect(() => {
+    if (!turnstileRef.current || !siteKey || !isTurnstileLoaded) return
+
+    let widgetId: string | null = null
+    const target = turnstileRef.current
+
+    // Clean container before rendering
+    target.innerHTML = ""
+
+    try {
+      if ((window as any).turnstile) {
+        widgetId = (window as any).turnstile.render(target, {
+          sitekey: siteKey,
+          callback: (token: string) => {
+            console.log("Turnstile success", token)
+            setTurnstileToken(token)
+          },
+          "error-callback": () => {
+            setTurnstileToken(null)
+            toast.error("Turnstile verification failed. Please try again.")
+          },
+          "expired-callback": () => {
+            setTurnstileToken(null)
+          },
+          theme: 'auto'
+        })
+      }
+    } catch (error) {
+      console.error("Turnstile render error:", error)
     }
-  }
+
+    return () => {
+      if (widgetId && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId)
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+  }, [activeTab, siteKey, isTurnstileLoaded, isCodeSent, turnstileResetKey])
 
   // Password login
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -78,7 +115,6 @@ export default function LoginPage() {
     try {
       if (!turnstileToken) {
         toast.error("Turnstile verification required. Please complete the security check.")
-        resetTurnstile()
         setIsLoading(false)
         return
       }
@@ -94,15 +130,31 @@ export default function LoginPage() {
       })
       
       if (result.error) {
-        resetTurnstile()
         const message = result.error.message || "Login failed"
         if (message.toLowerCase().includes("verify") || message.toLowerCase().includes("email not verified")) {
           setVerifyMessage(message)
           setVerifyOpen(true)
         } else {
           toast.error(message)
+          resetTurnstile()
         }
+
+        // Track login failure
+        posthog.capture('user_login_failed', {
+          login_method: 'password',
+          error_message: message,
+        });
       } else {
+        // Identify user in PostHog
+        posthog.identify(email, {
+          email: email,
+        });
+
+        // Track successful login
+        posthog.capture('user_logged_in', {
+          login_method: 'password',
+        });
+
         toast.success("Logged in successfully!")
         
         // Make sure we update the user context
@@ -122,9 +174,11 @@ export default function LoginPage() {
         }
       }
     } catch (error) {
-      resetTurnstile()
       toast.error("An error occurred during login")
       console.error("Login error:", error)
+
+      // Track login error
+      posthog.captureException(error as Error);
     } finally {
       setIsLoading(false)
     }
@@ -177,7 +231,6 @@ export default function LoginPage() {
 
     if (!turnstileToken) {
       toast.error("Turnstile verification required. Please complete the security check.")
-      resetTurnstile()
       setIsLoading(false)
       return
     }
@@ -195,14 +248,30 @@ export default function LoginPage() {
       })
 
       if (result.error) {
-        resetTurnstile()
         toast.error(result.error.message || "Invalid verification code")
+        resetTurnstile()
+
+        // Track OTP login failure
+        posthog.capture('user_login_failed', {
+          login_method: 'email_otp',
+          error_message: result.error.message || "Invalid verification code",
+        });
       } else {
+        // Identify user in PostHog
+        posthog.identify(email.trim(), {
+          email: email.trim(),
+        });
+
+        // Track successful OTP login
+        posthog.capture('user_logged_in', {
+          login_method: 'email_otp',
+        });
+
         handleSuccessfulLogin()
       }
     } catch (error) {
-      resetTurnstile()
       toast.error("Failed to verify code. Please try again.")
+      resetTurnstile()
     } finally {
       setIsLoading(false)
     }
@@ -244,7 +313,12 @@ export default function LoginPage() {
       <Head>
         <link rel="preconnect" href="https://challenges.cloudflare.com" />
       </Head>
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+      <Script 
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js" 
+        async 
+        defer 
+        onLoad={() => setIsTurnstileLoaded(true)}
+      />
       <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
         <DialogContent>
           <DialogHeader>
@@ -387,19 +461,8 @@ export default function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
-                <div className="mt-2">
-                  <div
-                    className="cf-turnstile"
-                    data-sitekey={siteKey}
-                    data-theme="auto"
-                    data-size="normal"
-                    data-retry="auto"
-                    data-refresh-expired="auto"
-                    data-retry-interval="1000"
-                    data-callback="onTurnstileSuccess"
-                    data-error-callback="onTurnstileError"
-                    data-expired-callback="onTurnstileExpired"
-                  ></div>
+                <div className="mt-2 hidden">
+                  <div ref={turnstileRef} className="min-h-[65px]"></div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign in"}
@@ -457,6 +520,10 @@ export default function LoginPage() {
                     </InputOTP>
                   </div>
                   
+                  <div className="mt-2 text-center flex justify-center hidden">
+                    <div ref={turnstileRef} className="min-h-[65px]"></div>
+                  </div>
+
                   <Button
                     onClick={handleVerifyCode}
                     disabled={!code.trim() || isLoading}

@@ -54,6 +54,7 @@ import {
 import { withProtection } from "@/lib/with-protection"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api-client"
+import posthog from "posthog-js"
 
 // Type definition matches the API response
 type Category = {
@@ -132,13 +133,23 @@ function CategoriesPage() {
       const res = await apiClient.post("/categories", values)
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] })
       toast.success("Category created successfully")
+
+      // Track category creation
+      posthog.capture('category_created', {
+        category_type: variables.type,
+        category_name: variables.name,
+      });
+
       setIsDialogOpen(false)
     },
     onError: (error) => {
       toast.error(error.message)
+
+      // Track category creation error
+      posthog.captureException(error as Error);
     },
   })
 
