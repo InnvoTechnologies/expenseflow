@@ -35,12 +35,24 @@ export default function RegisterPage() {
     }
     ;(window as any).onTurnstileError = () => {
       setTurnstileToken(null)
-      toast.error("Turnstile verification failed. Please try again.")
+      if ((window as any).turnstile) {
+        (window as any).turnstile.reset()
+      }
     }
     ;(window as any).onTurnstileExpired = () => {
       setTurnstileToken(null)
+      if ((window as any).turnstile) {
+        (window as any).turnstile.reset()
+      }
     }
   }, [])
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null)
+    if ((window as any).turnstile) {
+      (window as any).turnstile.reset()
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +65,8 @@ export default function RegisterPage() {
 
     try {
       if (!turnstileToken) {
-        toast.error("Turnstile verification required. Please refresh the page")
+        toast.error("Turnstile verification required. Please complete the security check.")
+        resetTurnstile()
         setIsLoading(false);
         return;
       }
@@ -69,6 +82,7 @@ export default function RegisterPage() {
       })
 
       if (result.error) {
+        resetTurnstile()
         toast.error(result.error.message || "Registration failed")
       } else {
         // With requireEmailVerification=true, user must verify before login
@@ -76,6 +90,7 @@ export default function RegisterPage() {
         router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
       }
     } catch (error) {
+      resetTurnstile()
       toast.error("An error occurred during registration")
       console.error("Registration error:", error)
     } finally {
@@ -235,6 +250,9 @@ export default function RegisterPage() {
               data-sitekey={siteKey}
               data-theme="auto"
               data-size="normal"
+              data-retry="auto"
+              data-refresh-expired="auto"
+              data-retry-interval="1000"
               data-callback="onTurnstileSuccess"
               data-error-callback="onTurnstileError"
               data-expired-callback="onTurnstileExpired"
