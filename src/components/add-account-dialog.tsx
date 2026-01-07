@@ -3,6 +3,9 @@
 import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useCurrency } from "@/hooks/use-currency"
+import { useQuery } from "@tanstack/react-query"
+import { apiClient } from "@/lib/api-client"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -32,12 +35,32 @@ const accountTypes = [
   { value: "person", label: "Person", icon: Users },
 ]
 
+type Account = {
+  id: string
+  currency: string
+  isDefault: boolean
+}
+
 export function AddAccountDialog({ children }: AddAccountDialogProps) {
   const [open, setOpen] = useState(false)
   const [accountType, setAccountType] = useState("")
   const [isPersonAccount, setIsPersonAccount] = useState(false)
   const [selectedCurrency, setSelectedCurrency] = useState<string>("")
+  const [isDefault, setIsDefault] = useState(false)
   const { baseCurrency } = useCurrency()
+
+  const { data: accounts } = useQuery<Account[]>({
+    queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await apiClient.get("/accounts")
+      return res.data
+    },
+  })
+
+  const defaultAccount = useMemo(() => accounts?.find(a => a.isDefault), [accounts])
+  const hasDefaultAccount = !!defaultAccount
+  const hasAccounts = accounts && accounts.length > 0
+  const defaultCurrency = defaultAccount?.currency || (hasAccounts ? accounts[0].currency : null)
 
   // Get all currencies and sort them
   const currencyList = useMemo(() => {
@@ -50,16 +73,32 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
           name: currency?.currency || "",
         }
       })
-      .filter((c) => c.code && c.name) // Filter out invalid entries
+      .filter((c) => {
+        // Show only default currency if it exists
+        if (defaultCurrency) {
+          return c.code === defaultCurrency
+        }
+        return c.code && c.name
+      }) 
       .sort((a, b) => a.code.localeCompare(b.code))
-  }, [])
+  }, [defaultCurrency])
 
   // Reset currency when dialog opens
   useEffect(() => {
     if (open) {
-      setSelectedCurrency(baseCurrency)
+      if (defaultCurrency) {
+        setSelectedCurrency(defaultCurrency)
+      } else {
+        setSelectedCurrency(baseCurrency)
+      }
+      // Force default if first account
+      if (!hasAccounts) {
+        setIsDefault(true)
+      } else {
+        setIsDefault(false)
+      }
     }
-  }, [open, baseCurrency])
+  }, [open, baseCurrency, defaultCurrency, hasAccounts])
 
   const handleAccountTypeChange = (value: string) => {
     setAccountType(value)
@@ -110,8 +149,9 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
           <div className="space-y-2">
             <Label>Currency</Label>
             <Select 
-              value={selectedCurrency || baseCurrency} 
+              value={selectedCurrency} 
               onValueChange={setSelectedCurrency}
+              disabled={!!defaultCurrency}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select currency" />
@@ -129,6 +169,24 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
             <Label htmlFor="openingBalance">Opening Balance</Label>
             <Input id="openingBalance" type="number" placeholder="0.00" />
           </div>
+
+          {!hasDefaultAccount && (
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="isDefault" 
+                checked={isDefault}
+                onCheckedChange={(checked) => setIsDefault(checked as boolean)}
+                disabled={!hasAccounts} // Always checked and disabled if first account
+              />
+              <label
+                htmlFor="isDefault"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Set as default account
+              </label>
+            </div>
+          )}
+
           {isPersonAccount && (
             <>
               <div className="space-y-2">

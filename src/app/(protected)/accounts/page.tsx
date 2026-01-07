@@ -114,6 +114,10 @@ function AccountsPage() {
       return res.data
     },
   })
+  const defaultAccount = useMemo(() => accounts?.find(a => a.isDefault), [accounts])
+  const hasDefaultAccount = !!defaultAccount
+  const hasAccounts = accounts && accounts.length > 0
+  const defaultCurrency = defaultAccount?.currency || (hasAccounts ? accounts[0].currency : null)
 
   // Create Account Mutation
   const createMutation = useMutation({
@@ -222,9 +226,9 @@ function AccountsPage() {
     form.reset({
       name: "",
       type: "BANK",
-      currency: baseCurrency || "USD",
+      currency: defaultCurrency || baseCurrency || "USD",
       currentBalance: "0",
-      isDefault: false,
+      isDefault: !hasAccounts,
     })
     setIsDialogOpen(true)
   }
@@ -344,28 +348,31 @@ function AccountsPage() {
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="isDefault"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Default Account
-                      </FormLabel>
-                      <FormDescription>
-                        Use this account as the default for new transactions.
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
+              {(!hasDefaultAccount || (editingAccount?.isDefault)) && (
+                <FormField
+                  control={form.control}
+                  name="isDefault"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={editingAccount?.isDefault} 
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Default Account
+                        </FormLabel>
+                        <FormDescription>
+                          Use this account as the default for new transactions.
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
