@@ -41,6 +41,7 @@ const navigation = [
 const drawerNavigation = [
   { name: "Accounts", href: "/accounts", icon: Wallet },
   { name: "Categories", href: "/categories", icon: Tag },
+  { name: "Tags", href: "/tags", icon: Tag },
   { name: "Payees", href: "/payees", icon: Users },
   { name: "Reminders", href: "/reminders", icon: BellRing },
   { name: "Subscriptions", href: "/subscriptions", icon: CreditCard },

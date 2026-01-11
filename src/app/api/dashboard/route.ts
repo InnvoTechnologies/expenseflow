@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { financeAccount, transaction, category, payee } from "@/db/schema";
+import { financeAccount, transaction, category, payee, tag, subscriptionTracking } from "@/db/schema";
 import { eq, sql, desc, and, gte, lte, or } from "drizzle-orm";
 import { startOfMonth, endOfMonth, parseISO } from "date-fns";
 
@@ -136,6 +136,7 @@ export async function GET(req: NextRequest) {
         }));
 
         // 5. Top Payees (Limit 5)
+        // 5. Top Payees (Limit 5)
         const topPayees = await db
             .select({
                 name: payee.name,
@@ -155,15 +156,121 @@ export async function GET(req: NextRequest) {
             .orderBy(desc(sql`sum(${transaction.amount})`))
             .limit(5);
 
+        // 6. Top Subscriptions (Limit 5)
+        const topSubscriptions = await db
+            .select({
+                title: subscriptionTracking.title,
+                total: sql<number>`sum(${transaction.amount})`
+            })
+            .from(transaction)
+            .innerJoin(subscriptionTracking, eq(transaction.subscriptionId, subscriptionTracking.id))
+            .where(
+                and(
+                    gte(transaction.date, startDate),
+                    lte(transaction.date, endDate),
+                    sql`${transaction.accountId} IN ${accountIds}`,
+                    eq(transaction.type, 'EXPENSE')
+                )
+            )
+            .groupBy(subscriptionTracking.title)
+            .orderBy(desc(sql`sum(${transaction.amount})`))
+            .limit(5);
+
+        // 7. Top Tags (Limit 5)
+        const topTagsRows = await db.execute(sql`
+            SELECT 
+                t.name, 
+                t.color,
+                SUM(trx.amount) as total
+            FROM ${transaction} trx
+            CROSS JOIN UNNEST(trx.tag_ids) AS tag_id
+            JOIN ${tag} t ON t.id = tag_id
+            WHERE 
+                trx.date >= ${startDate} 
+                AND trx.date <= ${endDate}
+                AND trx.account_id IN ${accountIds}
+                AND trx.type = 'EXPENSE'
+            GROUP BY t.name, t.color
+            ORDER BY total DESC
+            LIMIT 5
+        `);
+
+        // 8. Expenses by Category (Limit 5)
+        const expensesByCategory = await db
+            .select({
+                name: category.name,
+                color: category.color,
+                total: sql<number>`sum(${transaction.amount})`
+            })
+            .from(transaction)
+            .innerJoin(category, eq(transaction.categoryId, category.id))
+            .where(
+                and(
+                    gte(transaction.date, startDate),
+                    lte(transaction.date, endDate),
+                    or(
+                        sql`${transaction.accountId} IN ${accountIds}`,
+                        sql`${transaction.toAccountId} IN ${accountIds}`
+                    ),
+                    eq(transaction.type, 'EXPENSE')
+                )
+            )
+            .groupBy(category.name, category.color)
+            .orderBy(desc(sql`sum(${transaction.amount})`))
+            .limit(5);
+
+        // 9. Income by Category (Limit 5)
+        const incomeByCategory = await db
+            .select({
+                name: category.name,
+                color: category.color,
+                total: sql<number>`sum(${transaction.amount})`
+            })
+            .from(transaction)
+            .innerJoin(category, eq(transaction.categoryId, category.id))
+            .where(
+                and(
+                    gte(transaction.date, startDate),
+                    lte(transaction.date, endDate),
+                    or(
+                        sql`${transaction.accountId} IN ${accountIds}`,
+                        sql`${transaction.toAccountId} IN ${accountIds}`
+                    ),
+                    eq(transaction.type, 'INCOME')
+                )
+            )
+            .groupBy(category.name, category.color)
+            .orderBy(desc(sql`sum(${transaction.amount})`))
+            .limit(5);
+
         return NextResponse.json({
             totalBalance,
             monthlyIncome,
             monthlyExpense,
             recentTransactions,
-            accounts: accounts.slice(0, 5), // Return first 5 accounts for overview
+            accounts: accounts.slice(0, 5),
             topPayees: topPayees.map(p => ({
                 name: p.name,
                 amount: Number(p.total)
+            })),
+            topSubscriptions: topSubscriptions.map(s => ({
+                name: s.title,
+                amount: Number(s.total)
+            })),
+            topTags: topTagsRows.rows.map((row: any) => ({
+                name: row.name,
+                color: row.color,
+                amount: Number(row.total)
+            })),
+            expensesByCategory: expensesByCategory.map(c => ({
+                name: c.name,
+                color: c.color,
+                amount: Number(c.total)
+            })),
+            incomeByCategory: incomeByCategory.map(c => ({
+                name: c.name,
+                color: c.color,
+                amount: Number(c.total)
             }))
         });
 

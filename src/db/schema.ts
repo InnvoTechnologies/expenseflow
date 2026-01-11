@@ -225,6 +225,12 @@ export const transaction = pgTable("transaction", {
   // Status tracking
   status: text("status").default("completed"), // pending, completed, failed
 
+  // Tags
+  tagIds: uuid("tag_ids").array(),
+
+  // Link to Subscription (Optional)
+  subscriptionId: uuid("subscription_id").references(() => subscriptionTracking.id),
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -349,7 +355,7 @@ export const categoryRelations = relations(category, ({ one, many }) => ({
   transactions: many(transaction),
 }));
 
-export const transactionRelations = relations(transaction, ({ one }) => ({
+export const transactionRelations = relations(transaction, ({ one, many }) => ({
   // The source account
   account: one(financeAccount, {
     fields: [transaction.accountId],
@@ -369,6 +375,10 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
   payee: one(payee, {
     fields: [transaction.payeeId],
     references: [payee.id],
+  }),
+  subscription: one(subscriptionTracking, {
+    fields: [transaction.subscriptionId],
+    references: [subscriptionTracking.id],
   }),
 }));
 
@@ -395,7 +405,7 @@ export const reminderRelations = relations(reminder, ({ one }) => ({
   }),
 }));
 
-export const subscriptionTrackingRelations = relations(subscriptionTracking, ({ one }) => ({
+export const subscriptionTrackingRelations = relations(subscriptionTracking, ({ one, many }) => ({
   user: one(user, {
     fields: [subscriptionTracking.userId],
     references: [user.id],
@@ -412,4 +422,19 @@ export const subscriptionTrackingRelations = relations(subscriptionTracking, ({ 
     fields: [subscriptionTracking.accountId],
     references: [financeAccount.id],
   }),
+  transactions: many(transaction),
 }));
+
+export const tag = pgTable("tag", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  color: text("color").default("#000000").notNull(),
+
+  // Ownership
+  userId: uuid("user_id").references(() => user.id),
+  organizationId: uuid("organization_id").references(() => organization.id),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
