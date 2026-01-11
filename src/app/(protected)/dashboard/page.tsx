@@ -27,7 +27,7 @@ function DashboardPage() {
   // Format month for display
   const monthDisplay = new Date(selectedMonth + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
-  
+
 
   // Fetch Dashboard Data
   const { data, isLoading } = useQuery({
@@ -204,18 +204,109 @@ function DashboardPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Recent Transactions & Top Payees Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Transactions */}
+      {/* Category Breakdowns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Income by Category */}
         <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Income by Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!data?.incomeByCategory || data.incomeByCategory.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">No income data available</p>
+                <p className="text-sm">Income categories will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {data.incomeByCategory.map((cat: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{cat.name}</p>
+                        <div className="w-24 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${(cat.amount / (data.incomeByCategory[0].amount || 1)) * 100}%`,
+                              backgroundColor: cat.color
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="font-semibold text-green-600 ml-2">
+                      +{formatAmount(cat.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Expenses by Category */}
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Expenses by Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!data?.expensesByCategory || data.expensesByCategory.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">No expense data available</p>
+                <p className="text-sm">Expense categories will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {data.expensesByCategory.map((cat: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{cat.name}</p>
+                        <div className="w-24 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${(cat.amount / (data.expensesByCategory[0].amount || 1)) * 100}%`,
+                              backgroundColor: cat.color
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="font-semibold text-red-600 ml-2">
+                      -{formatAmount(cat.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      {/* Recent Transactions, Top Payees & Top Tags */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Recent Transactions */}
+        <Card className="h-full col-span-1 md:col-span-2 lg:col-span-1">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Recent Transactions</CardTitle>
               <TransactionDialog>
                 <Button variant="outline" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Transaction
+                  Add
                 </Button>
               </TransactionDialog>
             </div>
@@ -232,22 +323,22 @@ function DashboardPage() {
                   <div key={t.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center bg-muted",
+                        "h-10 w-10 rounded-full flex items-center justify-center bg-muted shrink-0",
                         t.type === "EXPENSE" && "bg-red-100 dark:bg-red-900/20",
                         t.type === "INCOME" && "bg-green-100 dark:bg-green-900/20",
                         t.type === "TRANSFER" && "bg-blue-100 dark:bg-blue-900/20",
                       )}>
                         {getTransactionIcon(t.type)}
                       </div>
-                      <div>
-                        <p className="font-medium line-clamp-1">{t.description || "No description"}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(t.date), "MMM d")} • {t.category?.name || t.type} • {t.account?.name}
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{t.description || "No description"}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {format(new Date(t.date), "MMM d")} • {t.category?.name || t.type}
                         </p>
                       </div>
                     </div>
                     <div className={cn(
-                      "font-semibold whitespace-nowrap",
+                      "font-semibold whitespace-nowrap ml-2",
                       t.type === "EXPENSE" && "text-red-600",
                       t.type === "INCOME" && "text-green-600",
                     )}>
@@ -260,7 +351,7 @@ function DashboardPage() {
               {recentTransactions.length > 0 && (
                 <div className="pt-2 text-center">
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/transactions">View All Transactions</Link>
+                    <Link href="/transactions">View All</Link>
                   </Button>
                 </div>
               )}
@@ -291,20 +382,20 @@ function DashboardPage() {
                 {data.topPayees.map((payee: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-primary/10 text-primary font-bold">
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-primary/10 text-primary font-bold shrink-0">
                         {payee.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-medium">{payee.name}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{payee.name}</p>
                         <div className="w-24 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full" 
+                          <div
+                            className="h-full bg-primary rounded-full"
                             style={{ width: `${(payee.amount / (data.topPayees[0].amount || 1)) * 100}%` }}
                           />
                         </div>
                       </div>
                     </div>
-                    <div className="font-semibold text-red-600">
+                    <div className="font-semibold text-red-600 ml-2">
                       {formatAmount(payee.amount)}
                     </div>
                   </div>
@@ -313,8 +404,106 @@ function DashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Top Tags */}
+        <Card className="h-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Top Tags</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/tags">
+                  View All
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!data?.topTags || data.topTags.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">No tag data available</p>
+                <p className="text-sm">Tags with most spending will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {data.topTags.map((tag: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{tag.name}</p>
+                        <div className="w-24 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${(tag.amount / (data.topTags[0].amount || 1)) * 100}%`,
+                              backgroundColor: tag.color
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="font-semibold text-red-600 ml-2">
+                      {formatAmount(tag.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Subscriptions */}
+        <Card className="h-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Top Subscriptions</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/subscriptions">
+                  View All
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!data?.topSubscriptions || data.topSubscriptions.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">No subscription data</p>
+                <p className="text-sm"> recurring expenses will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {data.topSubscriptions.map((sub: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold shrink-0">
+                        {sub.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{sub.name}</p>
+                        <div className="w-24 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ width: `${(sub.amount / (data.topSubscriptions[0].amount || 1)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="font-semibold text-red-600 ml-2">
+                      {formatAmount(sub.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </div >
   )
 }
 

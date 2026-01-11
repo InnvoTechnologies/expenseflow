@@ -120,6 +120,9 @@ const updateTransactionSchema = z.object({
     accountId: z.string().min(1).optional(),
     toAccountId: z.string().optional(),
     categoryId: z.string().optional(),
+    payeeId: z.string().nullable().optional(),
+    tagIds: z.array(z.string()).nullable().optional(),
+    subscriptionId: z.string().nullable().optional(),
     status: z.enum(["pending", "completed", "failed"]).optional(),
 });
 
@@ -158,6 +161,9 @@ export async function PATCH(
                     description: transaction.description,
                     date: transaction.date,
                     status: transaction.status,
+                    payeeId: transaction.payeeId,
+                    tagIds: transaction.tagIds,
+                    subscriptionId: transaction.subscriptionId,
                     accountOrganizationId: financeAccount.organizationId,
                     accountUserId: financeAccount.userId
                 })
@@ -272,6 +278,12 @@ export async function PATCH(
                     toAccountId: newToAccountId || null,
                     categoryId: validatedData.categoryId !== undefined ? validatedData.categoryId : existingTx.categoryId,
                     status: validatedData.status || existingTx.status,
+
+                    // Added fields
+                    payeeId: validatedData.payeeId !== undefined ? validatedData.payeeId : existingTx.payeeId,
+                    tagIds: validatedData.tagIds !== undefined ? validatedData.tagIds : existingTx.tagIds,
+                    subscriptionId: validatedData.subscriptionId !== undefined ? validatedData.subscriptionId : existingTx.subscriptionId,
+
                     updatedAt: new Date(),
                 })
                 .where(eq(transaction.id, id))

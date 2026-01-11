@@ -40,6 +40,13 @@ import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api-client"
 import { useOrganizationScope } from "@/hooks/use-organization-scope"
 import posthog from "posthog-js"
+import { TagInput } from "./tag-input"
+
+const COLORS = [
+  "#EF4444", "#F97316", "#F59E0B", "#84CC16", "#10B981",
+  "#06B6D4", "#3B82F6", "#6366F1", "#8B5CF6", "#D946EF",
+  "#EC4899", "#64748B", "#71717A", "#737373", "#78716C"
+]
 
 // Schemas
 const baseTransactionSchema = z.object({
@@ -49,6 +56,8 @@ const baseTransactionSchema = z.object({
   description: z.string().optional(),
   toAccountId: z.string().optional(),
   payeeId: z.string().optional(),
+  tagIds: z.array(z.string()).default([]),
+  subscriptionId: z.string().optional(),
   status: z.enum(["pending", "completed", "failed"]),
   type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]),
 })
@@ -79,7 +88,9 @@ type TransactionFormValues = {
   accountId: string
   toAccountId?: string
   categoryId?: string
-  payeeId?: string
+  payeeId?: string | null
+  tagIds?: string[]
+  subscriptionId?: string | null
   status: "pending" | "completed" | "failed"
 }
 
@@ -128,6 +139,35 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
     },
   })
 
+  // Fetch Tags
+  const { data: tags = [] } = useQuery({
+    queryKey: ["tags", organizationId],
+    queryFn: async () => {
+      const res = await apiClient.get("/tags")
+      return res.data
+    },
+  })
+
+  // Fetch Subscriptions
+  const { data: subscriptions = [] } = useQuery({
+    queryKey: ["subscriptions", organizationId],
+    queryFn: async () => {
+      const res = await apiClient.get("/subscriptions")
+      return res.data
+    },
+  })
+
+  const createTagMutation = useMutation({
+    mutationFn: async (vars: { name: string, color: string }) => {
+      const res = await apiClient.post("/tags", vars);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags", organizationId] });
+    },
+    onError: (err) => toast.error("Failed to create tag")
+  });
+
   // Filter categories by type
   const expenseCategories = categories.filter((c: any) => c.type === "EXPENSE")
   const incomeCategories = categories.filter((c: any) => c.type === "INCOME")
@@ -146,6 +186,7 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
       toAccountId: "",
       categoryId: "",
       payeeId: "",
+      subscriptionId: "",
       status: "completed",
     },
   })
@@ -164,6 +205,8 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
         toAccountId: transactionToEdit.toAccountId || "",
         categoryId: transactionToEdit.categoryId || "",
         payeeId: transactionToEdit.payeeId || "",
+        tagIds: transactionToEdit.tagIds || [],
+        subscriptionId: transactionToEdit.subscription?.id || "",
         status: transactionToEdit.status,
       })
     } else if (!transactionToEdit && open) {
@@ -178,6 +221,8 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
         toAccountId: "",
         categoryId: "",
         payeeId: "",
+        tagIds: [],
+        subscriptionId: "",
         status: "completed",
       })
     }
@@ -248,12 +293,12 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
   })
 
   const onSubmit = (values: TransactionFormValues) => {
-    const submissionData = { 
-      ...values, 
+    const submissionData = {
+      ...values,
       type: activeTab,
-      // Ensure empty strings are converted to undefined for optional fields
-      payeeId: values.payeeId === "" || values.payeeId === "__none__" ? undefined : values.payeeId,
-      categoryId: values.categoryId === "" ? undefined : values.categoryId,
+      payeeId: values.payeeId === "" || values.payeeId === "__none__" ? null : values.payeeId,
+      subscriptionId: values.subscriptionId === "" || values.subscriptionId === "__none__" ? null : values.subscriptionId,
+      categoryId: values.categoryId === "" ? undefined : values.categoryId, // Category is required for Expense/Income, so undefined is fine (validations catch empty)
       toAccountId: values.toAccountId === "" ? undefined : values.toAccountId,
     }
     if (transactionToEdit) {
@@ -458,8 +503,8 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Payee (Optional)</FormLabel>
-                        <Select 
-                          onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)} 
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
                           value={field.value || undefined}
                         >
                           <FormControl>
@@ -483,6 +528,37 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                 )}
               </div>
 
+              {activeTab === "EXPENSE" && (
+                <FormField
+                  control={form.control}
+                  name="subscriptionId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription (Optional)</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subscription (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">None</SelectItem>
+                          {subscriptions.map((sub: any) => (
+                            <SelectItem key={sub.id} value={sub.id}>
+                              {sub.title} ({baseCurrency} {parseFloat(sub.amount).toFixed(2)})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={form.control}
                 name="description"
@@ -491,6 +567,28 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     <FormLabel>Description (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Add a note..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tagIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags (Optional)</FormLabel>
+                    <FormControl>
+                      <TagInput
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        options={tags}
+                        onCreate={async (name) => {
+                          const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                          await createTagMutation.mutateAsync({ name, color: randomColor });
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

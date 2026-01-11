@@ -15,33 +15,24 @@ const CURRENCY_NAMES: Record<string, string> = {
   SAR: "Saudi Riyal",
 }
 
-type Account = {
-  id: string
-  currency: string
-  isDefault: boolean
-}
-
 export function useCurrency() {
   const { user } = useAuth()
 
-  const { data: accounts } = useQuery<Account[]>({
-    queryKey: ["accounts"],
+  // Fetch currency settings from API
+  const { data: settings } = useQuery({
+    queryKey: ["currency-settings", user?.id],
     queryFn: async () => {
-      const res = await apiClient.get("/accounts")
+      if (!user?.id) return null
+      const res = await apiClient.get("/profile")
       return res.data
     },
-    enabled: !!user, // Only fetch if user is logged in
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
-  const baseCurrency = useMemo(() => {
-    if (!accounts || accounts.length === 0) return "USD"
-    
-    const defaultAccount = accounts.find((a) => a.isDefault)
-    return defaultAccount?.currency || accounts[0]?.currency || "USD"
-  }, [accounts])
-
-  const country = user?.country || "Us"
-  const numberFormat = user?.numberFormat ?? 2
+  const baseCurrency = settings?.baseCurrency || "USD"
+  const country = settings?.country || "US"
+  const numberFormat = settings?.numberFormat ?? 2
 
   const currencyName = useMemo(() => {
     return CURRENCY_NAMES[baseCurrency] || baseCurrency

@@ -36,6 +36,20 @@
       "when": 1767258803079,
       "tag": "0004_next_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768042163058,
+      "tag": "0005_sturdy_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768063920512,
+      "tag": "0006_hard_stark_industries",
+      "breakpoints": true
     }
   ]
 }
