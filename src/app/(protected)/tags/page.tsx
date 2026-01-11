@@ -41,7 +41,7 @@ import { useOrganizationScope } from "@/hooks/use-organization-scope"
 
 const tagSchema = z.object({
     name: z.string().min(1, "Name is required"),
-    color: z.string().default("#000000"),
+    color: z.string(),
 })
 
 type TagFormValues = z.infer<typeof tagSchema>

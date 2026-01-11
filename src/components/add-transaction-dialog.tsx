@@ -55,9 +55,9 @@ const baseTransactionSchema = z.object({
   date: z.string().min(1, "Date is required"),
   description: z.string().optional(),
   toAccountId: z.string().optional(),
-  payeeId: z.string().optional(),
+  payeeId: z.string().nullable().optional(),
   tagIds: z.array(z.string()).default([]),
-  subscriptionId: z.string().optional(),
+  subscriptionId: z.string().nullable().optional(),
   status: z.enum(["pending", "completed", "failed"]),
   type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]),
 })
