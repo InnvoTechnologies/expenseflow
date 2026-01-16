@@ -49,9 +49,9 @@ const drawerNavigation = [
   { name: "Investments", href: "/investment", icon: Briefcase },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "About", href: "/about", icon: Info },
-  { name: "Help", href: "/help", icon: HelpCircle },
-  { name: "Invite Friends & Family", href: "/invite", icon: Users },
-  { name: "Privacy Policy", href: "/privacy", icon: Shield },
+  // { name: "Help", href: "/help", icon: HelpCircle },
+  // { name: "Invite Friends & Family", href: "/invite", icon: Users },
+  // { name: "Privacy Policy", href: "/privacy", icon: Shield },
 ]
 
 export function Sidebar() {
