@@ -15,9 +15,9 @@ const createTransactionSchema = z.object({
     accountId: z.string().min(1),
     toAccountId: z.string().optional(),
     categoryId: z.string().optional(),
-    payeeId: z.string().optional(),
-    tagIds: z.array(z.string()).optional(),
-    subscriptionId: z.string().optional(),
+    payeeId: z.string().optional().nullable(),
+    tagIds: z.array(z.string()).optional().nullable(),
+    subscriptionId: z.string().optional().nullable(),
     status: z.enum(["pending", "completed", "failed"]).default("completed"),
 }).refine((data) => {
     if (data.type === "TRANSFER" && !data.toAccountId) return false;
