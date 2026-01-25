@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, CreditCard, Calendar, Bell, Pencil, Trash2, DollarSign, Loader2 } from "lucide-react"
+import { Plus, CreditCard, Calendar, Bell, Pencil, Trash2 } from "lucide-react"
 import { withProtection } from "@/lib/with-protection"
 import { AddSubscriptionDialog } from "@/components/add-subscription-dialog"
 import { apiClient } from "@/lib/api-client"
@@ -279,7 +279,6 @@ function SubscriptionsTrackingPage() {
 
                                         <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-muted-foreground">
                                             <div className="flex items-center gap-1">
-                                                <DollarSign className="h-4 w-4" />
                                                 <span className="font-medium text-foreground">
                                                     {formatAmount(parseFloat(subscription.amount), subscription.currency)}
                                                 </span>
