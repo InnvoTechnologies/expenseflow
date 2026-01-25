@@ -3,7 +3,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db/drizzle";
 import { user, session, account, verification, organization, invitation } from "@/db/schema";
 import { sendEmail } from "@/lib/mailer";
-import { buildActionEmailHTML, buildActionEmailText, buildMagicCodeEmailHTML, buildMagicCodeEmailText } from "@/lib/email-template";
+import { ActionEmail } from "@/emails/ActionEmail";
+import { MagicCodeEmail } from "@/emails/MagicCodeEmail";
 import { captcha } from "better-auth/plugins"
 import { organization as organizationPlugin } from "better-auth/plugins"
 import { emailOTP } from "better-auth/plugins"
@@ -30,19 +31,17 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }, _req) => {
-      const html = buildActionEmailHTML({
-        title: "Reset your password",
-        description: "Click the button below to set a new password.",
-        actionText: "Reset password",
-        actionUrl: url,
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your password",
+        react: ActionEmail({
+          title: "Reset your password",
+          description: "Click the button below to set a new password.",
+          actionText: "Reset password",
+          actionUrl: url,
+          email: user.email,
+        }),
       })
-      const text = buildActionEmailText({
-        title: "Reset your password",
-        description: "Click the link below to set a new password.",
-        actionText: "Reset password",
-        actionUrl: url,
-      })
-      await sendEmail({ to: user.email, subject: "Reset your password", html, text })
     },
   },
   emailOTP: {
@@ -52,19 +51,17 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }, _req) => {
-      const html = buildActionEmailHTML({
-        title: "Verify your email",
-        description: "Confirm your email address to complete your account setup.",
-        actionText: "Verify email",
-        actionUrl: url,
+      await sendEmail({
+        to: user.email,
+        subject: "Verify your email address",
+        react: ActionEmail({
+          title: "Verify your email",
+          description: "Confirm your email address to complete your account setup.",
+          actionText: "Verify email",
+          actionUrl: url,
+          email: user.email,
+        }),
       })
-      const text = buildActionEmailText({
-        title: "Verify your email",
-        description: "Confirm your email address to complete your account setup.",
-        actionText: "Verify email",
-        actionUrl: url,
-      })
-      await sendEmail({ to: user.email, subject: "Verify your email address", html, text })
     },
   },
   socialProviders: {
@@ -154,14 +151,14 @@ export const auth = betterAuth({
           description = "Use this code to reset your password.";
         }
         
-        const html = buildMagicCodeEmailHTML({
-          code: otp,
+        await sendEmail({
+          to: email,
+          subject,
+          react: MagicCodeEmail({
+            code: otp,
+            email,
+          }),
         })
-        const text = buildMagicCodeEmailText({
-          code: otp,
-        })
-        
-        await sendEmail({ to: email, subject, html, text })
       },
     }),
   ],

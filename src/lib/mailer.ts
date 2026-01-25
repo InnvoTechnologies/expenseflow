@@ -1,10 +1,12 @@
 import { Resend } from "resend"
+import type React from "react"
 
 type SendEmailParams = {
   to: string | string[]
   subject: string
   text?: string
   html?: string
+  react?: React.ReactElement
 }
 
 const resendApiKey = process.env.RESEND_API_KEY
@@ -29,6 +31,7 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
   }
   if (params.html) options.html = params.html
   if (params.text) options.text = params.text
+  if (params.react) options.react = params.react
 
   try {
     const result: any = await resend.emails.send(options)
@@ -43,5 +46,4 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
     throw error
   }
 }
-
 
