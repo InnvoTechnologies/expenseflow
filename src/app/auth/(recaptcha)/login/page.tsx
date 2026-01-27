@@ -349,7 +349,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Sign in to your account</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* <Button 
+          <Button 
             type="button" 
             variant="outline" 
             className="w-full flex items-center justify-center gap-2"
@@ -403,7 +403,7 @@ export default function LoginPage() {
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">Or</span>
             </div>
-          </div> */}
+          </div>
 
           <Tabs 
             defaultValue="password" 
