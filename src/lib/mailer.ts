@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import type React from "react"
+import { render, toPlainText } from "@react-email/render"
 
 type SendEmailParams = {
   to: string | string[]
@@ -29,9 +30,14 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
     to: toValue as any,
     subject: params.subject,
   }
-  if (params.html) options.html = params.html
-  if (params.text) options.text = params.text
-  if (params.react) options.react = params.react
+  if (params.react) {
+    const html = await render(params.react)
+    options.html = html
+    options.text = params.text ?? toPlainText(html)
+  } else {
+    if (params.html) options.html = params.html
+    if (params.text) options.text = params.text
+  }
 
   try {
     const result: any = await resend.emails.send(options)
