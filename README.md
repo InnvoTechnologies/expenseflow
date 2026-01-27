@@ -7,6 +7,8 @@ A modern, full-stack finance application built with Next.js 15, specialized in m
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-38bdf8)
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FInnvoTechnologies%2Fexpenseflow&project-name=expenseflow&repository-name=expenseflow&env=DATABASE_URL,OPENAI_API_KEY,BETTER_AUTH_SECRET,BETTER_AUTH_URL,NEXT_PUBLIC_BETTER_AUTH_URL,NEXT_PUBLIC_POSTHOG_KEY,NEXT_PUBLIC_POSTHOG_HOST,NEXT_PUBLIC_SENTRY_DSN,RESEND_API_KEY,RESEND_FROM,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,NEXT_PUBLIC_TURNSTILE_SITE_KEY,TURNSTILE_SECRET_KEY,NEXT_PUBLIC_APP_NAME,NEXT_PUBLIC_BACKEND_URL&envLink=https%3A%2F%2Fgithub.com%2FInnvoTechnologies%2Fexpenseflow%23environment-variables)
+
 ## 🚀 Features
 
 ### Core Financial Management
