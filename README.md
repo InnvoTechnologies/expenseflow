@@ -78,6 +78,8 @@ A modern, full-stack finance application built with Next.js 15, specialized in m
 5. **Start Development Server**
    ```bash
    yarn dev
+   # To start the Drizzle Studio on port 3001
+   yarn drizzle-kit studio --port 3001 --verbose
    ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.

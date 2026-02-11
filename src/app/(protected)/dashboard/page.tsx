@@ -3,11 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, Plus, TrendingUp, TrendingDown, Wallet, Loader2, ArrowUp, ArrowDown, ArrowLeftRight, Receipt } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { ChevronLeft, ChevronRight, Plus, TrendingUp, TrendingDown, Wallet, Loader2, ArrowUp, ArrowDown, ArrowLeftRight, Receipt, CheckCircle2, Circle } from "lucide-react"
 import { withProtection } from "@/lib/with-protection"
 import { useAuth } from "@/hooks/use-auth"
 import { useCurrency } from "@/hooks/use-currency"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { AddAccountDialog } from "@/components/add-account-dialog"
 import { TransactionDialog } from "@/components/add-transaction-dialog"
@@ -23,6 +25,8 @@ function DashboardPage() {
   const { formatAmount } = useCurrency()
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [skippedSteps, setSkippedSteps] = useState<string[]>([])
+  const [profileStepComplete, setProfileStepComplete] = useState(false)
 
   // Format month for display
   const monthDisplay = new Date(selectedMonth + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -37,6 +41,21 @@ function DashboardPage() {
       return res.data
     }
   })
+
+  useEffect(() => {
+    const saved = localStorage.getItem("onboardingSkippedSteps")
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          setSkippedSteps(parsed)
+        }
+      } catch {
+        setSkippedSteps([])
+      }
+    }
+    setProfileStepComplete(localStorage.getItem("onboardingProfileComplete") === "true")
+  }, [])
 
   // Generate last 12 months for selector
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -69,7 +88,29 @@ function DashboardPage() {
     )
   }
 
-  const { totalBalance = 0, monthlyIncome = 0, monthlyExpense = 0, recentTransactions = [], accounts = [] } = data || {}
+  const { totalBalance = 0, monthlyIncome = 0, monthlyExpense = 0, recentTransactions = [], accounts = [], onboarding } = data || {}
+
+  const steps = [
+    { key: "profile", title: "Set currency and country", href: "/settings", done: profileStepComplete },
+    { key: "categories", title: "Create categories", href: "/categories", done: (onboarding?.categoriesCount || 0) > 0 },
+    { key: "payees", title: "Create payees", href: "/payees", done: (onboarding?.payeesCount || 0) > 0 },
+    { key: "transaction", title: "Make your first transaction", href: "/transactions", done: (onboarding?.transactionsCount || 0) > 0 },
+    { key: "subscriptions", title: "Add subscriptions", href: "/subscriptions", done: (onboarding?.subscriptionsCount || 0) > 0, optional: true },
+    { key: "reminders", title: "Add reminders", href: "/reminders", done: (onboarding?.remindersCount || 0) > 0, optional: true },
+    { key: "tags", title: "Add tags", href: "/tags", done: (onboarding?.tagsCount || 0) > 0 },
+  ]
+
+  const totalSteps = steps.length
+  const completedSteps = steps.filter(step => step.done || (step.optional && skippedSteps.includes(step.key))).length
+  const progressValue = Math.round((completedSteps / totalSteps) * 100)
+
+  const toggleSkip = (key: string, shouldSkip: boolean) => {
+    const next = shouldSkip
+      ? Array.from(new Set([...skippedSteps, key]))
+      : skippedSteps.filter(step => step !== key)
+    setSkippedSteps(next)
+    localStorage.setItem("onboardingSkippedSteps", JSON.stringify(next))
+  }
 
   return (
     <div className="space-y-6">
@@ -110,6 +151,62 @@ function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Getting started</CardTitle>
+              <p className="text-sm text-muted-foreground">Complete these steps to get more out of ExpenseFlow</p>
+            </div>
+            <div className="text-sm text-muted-foreground">{completedSteps}/{totalSteps}</div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Progress value={progressValue} />
+          <div className="space-y-3">
+            {steps.map(step => {
+              const isSkipped = step.optional && skippedSteps.includes(step.key)
+              const isDone = step.done || isSkipped
+              return (
+                <div key={step.key} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    {isDone ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    <div className="space-y-1">
+                      <p className={cn("font-medium", isDone && "text-muted-foreground line-through")}>{step.title}</p>
+                      <div className="flex items-center gap-2">
+                        {step.optional && !isDone && <Badge variant="outline">Optional</Badge>}
+                        {isSkipped && <Badge variant="secondary">Skipped</Badge>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!step.done && !isSkipped && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={step.href}>Start</Link>
+                      </Button>
+                    )}
+                    {step.optional && !step.done && !isSkipped && (
+                      <Button variant="ghost" size="sm" onClick={() => toggleSkip(step.key, true)}>
+                        Skip
+                      </Button>
+                    )}
+                    {isSkipped && (
+                      <Button variant="ghost" size="sm" onClick={() => toggleSkip(step.key, false)}>
+                        Unskip
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

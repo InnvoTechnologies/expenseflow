@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { financeAccount, transaction, category, payee, tag, subscriptionTracking } from "@/db/schema";
+import { financeAccount, transaction, category, payee, tag, subscriptionTracking, reminder } from "@/db/schema";
 import { eq, sql, desc, and, gte, lte, or } from "drizzle-orm";
 import { startOfMonth, endOfMonth, parseISO } from "date-fns";
 
@@ -41,17 +41,72 @@ export async function GET(req: NextRequest) {
             .from(financeAccount)
             .where(accountWhereClause);
 
+        const accountIds = accounts.map(a => a.id);
+
+        const ownershipClause = activeOrgId
+            ? eq(category.organizationId, activeOrgId)
+            : eq(category.userId, userId);
+
+        const [
+            categoryCountRows,
+            payeeCountRows,
+            tagCountRows,
+            reminderCountRows,
+            subscriptionCountRows
+        ] = await Promise.all([
+            db.select({ count: sql<number>`count(*)` }).from(category).where(ownershipClause),
+            db.select({
+                count: sql<number>`count(*)`
+            }).from(payee).where(activeOrgId ? eq(payee.organizationId, activeOrgId) : eq(payee.userId, userId)),
+            db.select({
+                count: sql<number>`count(*)`
+            }).from(tag).where(activeOrgId ? eq(tag.organizationId, activeOrgId) : eq(tag.userId, userId)),
+            db.select({
+                count: sql<number>`count(*)`
+            }).from(reminder).where(activeOrgId ? eq(reminder.organizationId, activeOrgId) : eq(reminder.userId, userId)),
+            db.select({
+                count: sql<number>`count(*)`
+            }).from(subscriptionTracking).where(activeOrgId ? eq(subscriptionTracking.organizationId, activeOrgId) : eq(subscriptionTracking.userId, userId))
+        ]);
+
+        let transactionsCount = 0;
+        if (accountIds.length > 0) {
+            const [transactionCountRow] = await db
+                .select({ count: sql<number>`count(distinct ${transaction.id})` })
+                .from(transaction)
+                .where(
+                    or(
+                        sql`${transaction.accountId} IN ${accountIds}`,
+                        sql`${transaction.toAccountId} IN ${accountIds}`
+                    )
+                );
+            transactionsCount = Number(transactionCountRow?.count || 0);
+        }
+
+        const onboarding = {
+            categoriesCount: Number(categoryCountRows?.[0]?.count || 0),
+            payeesCount: Number(payeeCountRows?.[0]?.count || 0),
+            tagsCount: Number(tagCountRows?.[0]?.count || 0),
+            remindersCount: Number(reminderCountRows?.[0]?.count || 0),
+            subscriptionsCount: Number(subscriptionCountRows?.[0]?.count || 0),
+            transactionsCount,
+        };
+
         if (accounts.length === 0) {
             return NextResponse.json({
                 totalBalance: 0,
-                income: 0,
-                expense: 0,
+                monthlyIncome: 0,
+                monthlyExpense: 0,
                 recentTransactions: [],
-                accounts: []
+                accounts: [],
+                topPayees: [],
+                topSubscriptions: [],
+                topTags: [],
+                expensesByCategory: [],
+                incomeByCategory: [],
+                onboarding
             });
         }
-
-        const accountIds = accounts.map(a => a.id);
 
         // Calculate Total Balance
         const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.currentBalance), 0);
@@ -271,7 +326,8 @@ export async function GET(req: NextRequest) {
                 name: c.name,
                 color: c.color,
                 amount: Number(c.total)
-            }))
+            })),
+            onboarding
         });
 
     } catch (error: any) {
