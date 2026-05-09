@@ -159,7 +159,7 @@ export async function GET(req: NextRequest) {
         // Collect all tag IDs
         const allTagIds = Array.from(new Set(rows.flatMap(r => r.tagIds || []).filter(id => id !== null)));
 
-        let tagsMap = new Map();
+        const tagsMap = new Map();
         if (allTagIds.length > 0) {
             const tags = await db.select().from(tag).where(inArray(tag.id, allTagIds as string[]));
             tags.forEach(t => tagsMap.set(t.id, t));

@@ -27,7 +27,9 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
+    FormDescription,
 } from "@/components/ui/form"
+import { Switch } from "@/components/ui/switch"
 import { apiClient } from "@/lib/api-client"
 
 const payeeSchema = z.object({
@@ -36,6 +38,7 @@ const payeeSchema = z.object({
     phone: z.string().optional(),
     address: z.string().optional(),
     description: z.string().optional(),
+    isArchived: z.boolean().optional(),
 })
 
 type PayeeFormValues = z.infer<typeof payeeSchema>
@@ -68,6 +71,7 @@ export function AddPayeeDialog({
             phone: "",
             address: "",
             description: "",
+            isArchived: false,
         },
     })
 
@@ -80,6 +84,7 @@ export function AddPayeeDialog({
                 phone: payeeToEdit.phone || "",
                 address: payeeToEdit.address || "",
                 description: payeeToEdit.description || "",
+                isArchived: payeeToEdit.isArchived || false,
             })
         } else if (!payeeToEdit && open) {
             form.reset({
@@ -88,6 +93,7 @@ export function AddPayeeDialog({
                 phone: "",
                 address: "",
                 description: "",
+                isArchived: false,
             })
         }
     }, [payeeToEdit, open, form])
@@ -219,6 +225,29 @@ export function AddPayeeDialog({
                                 </FormItem>
                             )}
                         />
+
+                        {payeeToEdit && (
+                            <FormField
+                                control={form.control}
+                                name="isArchived"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Archive Payee</FormLabel>
+                                            <FormDescription>
+                                                Archived payees won&apos;t show up in transaction dropdowns.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                                 Cancel

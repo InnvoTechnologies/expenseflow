@@ -9,7 +9,7 @@ import {
   pgEnum,
   decimal
 } from "drizzle-orm/pg-core";
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 
 // ----------------------------------------------------------------------
 // 1. ENUMS (Finance Specific)
@@ -248,6 +248,7 @@ export const payee = pgTable("payee", {
   userId: uuid("user_id").references(() => user.id),
   organizationId: uuid("organization_id").references(() => organization.id),
 
+  isArchived: boolean("is_archived").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

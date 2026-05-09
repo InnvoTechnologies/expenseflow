@@ -5,7 +5,7 @@ import { user, session, account, verification, organization, invitation } from "
 import { sendEmail } from "@/lib/mailer";
 import { ActionEmail } from "@/emails/ActionEmail";
 import { MagicCodeEmail } from "@/emails/MagicCodeEmail";
-import { captcha } from "better-auth/plugins"
+import { captcha, Organization } from "better-auth/plugins"
 import { organization as organizationPlugin } from "better-auth/plugins"
 import { emailOTP } from "better-auth/plugins"
 
@@ -110,7 +110,7 @@ export const auth = betterAuth({
       // Auto-create organization when user registers
       organizationCreation: {
         disabled: false,
-        afterCreate: async ({ organization, member, user }, request) => {
+        afterCreate: async ({organization, member, user }: {organization: Organization, member: any, user: any}, request: any) => {
           // You can add custom logic here like creating default resources
           console.log(`Organization "${organization.name}" created for user ${user.email}`);
         }
@@ -132,7 +132,7 @@ export const auth = betterAuth({
       invitationExpiresIn: 48 * 60 * 60,
     }),
     emailOTP({
-      async sendVerificationOTP({ email, otp, type }: { email: string; otp: string; type: "sign-in" | "email-verification" | "forget-password" }, _req: any) {
+      async sendVerificationOTP({ email, otp, type }, _req) {
         let subject = "Your verification code";
         let title = "Verification code";
         let description = "Use this code to complete your request.";
@@ -149,16 +149,17 @@ export const auth = betterAuth({
           subject = "Reset your password";
           title = "Password reset code";
           description = "Use this code to reset your password.";
+        } else if (type === "change-email") {
+          subject = "Confirm your new email";
+          title = "Email change code";
+          description = "Use this code to confirm your new email address.";
         }
         
         await sendEmail({
           to: email,
           subject,
-          react: MagicCodeEmail({
-            code: otp,
-            email,
-          }),
-        })
+          react: MagicCodeEmail({ code: otp, email }),
+        });
       },
     }),
   ],

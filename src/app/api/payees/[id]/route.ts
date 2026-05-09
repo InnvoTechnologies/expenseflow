@@ -12,6 +12,7 @@ const updatePayeeSchema = z.object({
     phone: z.string().optional(),
     address: z.string().optional(),
     description: z.string().optional(),
+    isArchived: z.boolean().optional(),
 });
 
 export async function PATCH(

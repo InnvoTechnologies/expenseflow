@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -80,7 +80,7 @@ const transferSchema = baseTransactionSchema.extend({
 
 // Unified form values type
 type TransactionFormValues = {
-  type: "EXPENSE" | "INCOME" | "TRANSFER"
+  type?: "EXPENSE" | "INCOME" | "TRANSFER"
   amount: string
   feeAmount?: string
   date: string
@@ -165,7 +165,7 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags", organizationId] });
     },
-    onError: (err) => toast.error("Failed to create tag")
+    onError: () => toast.error("Failed to create tag")
   });
 
   // Filter categories by type
@@ -175,7 +175,7 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(
       activeTab === "TRANSFER" ? transferSchema : expenseIncomeSchema
-    ),
+    ) as any,
     defaultValues: {
       type: "EXPENSE",
       amount: "",
@@ -244,6 +244,34 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
       // Auto-select Account
       if (accounts.length === 1 && !form.getValues("accountId")) {
         form.setValue("accountId", accounts[0].id);
+      }
+
+      // Auto-select Category
+      const relevantCategories = activeTab === "EXPENSE" ? expenseCategories : incomeCategories;
+      if (relevantCategories.length === 1 && !form.getValues("categoryId")) {
+        form.setValue("categoryId", relevantCategories[0].id);
+      }
+
+      // Auto-select Payee (Active only)
+      const activePayees = payees.filter((p: any) => !p.isArchived);
+      if (activePayees.length === 1 && activeTab === "EXPENSE" && !form.getValues("payeeId")) {
+        form.setValue("payeeId", activePayees[0].id);
+      }
+
+      // Auto-select Subscription
+      if (subscriptions.length === 1 && activeTab === "EXPENSE" && !form.getValues("subscriptionId")) {
+        form.setValue("subscriptionId", subscriptions[0].id);
+      }
+
+      // Auto-select To Account for Transfers
+      if (activeTab === "TRANSFER" && accounts.length === 2 && !form.getValues("toAccountId")) {
+        const fromAccount = form.getValues("accountId");
+        if (fromAccount) {
+          const toAccount = accounts.find((a: any) => a.id !== fromAccount);
+          if (toAccount) {
+            form.setValue("toAccountId", toAccount.id);
+          }
+        }
       }
     }
   }, [open, transactionToEdit, accounts, expenseCategories, incomeCategories, payees, subscriptions, activeTab, form]);
@@ -523,7 +551,7 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="__none__">None</SelectItem>
-                            {payees.map((payee: any) => (
+                            {payees.filter((p: any) => !p.isArchived).map((payee: any) => (
                               <SelectItem key={payee.id} value={payee.id}>
                                 {payee.name}
                               </SelectItem>
