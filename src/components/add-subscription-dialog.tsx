@@ -141,7 +141,17 @@ export function AddSubscriptionDialog({
                 reminderEnabled: true,
             })
         }
-    }, [subscriptionToEdit, open, form])
+    }, [subscriptionToEdit, open, form, baseCurrency])
+    
+    // Auto-selection for single options
+    useEffect(() => {
+        if (open && !subscriptionToEdit) {
+            // Auto-select Account
+            if (accounts.length === 1 && !form.getValues("accountId")) {
+                form.setValue("accountId", accounts[0].id)
+            }
+        }
+    }, [open, subscriptionToEdit, categories, accounts, form])
 
     const createMutation = useMutation({
         mutationFn: async (values: SubscriptionFormValues) => {

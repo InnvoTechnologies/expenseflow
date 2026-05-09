@@ -32,6 +32,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   // { name: "Money", href: "/accounts", icon: Wallet },
   { name: "Transactions", href: "/transactions", icon: Receipt },
+  { name: "Split Payments", href: "/groups", icon: Users },
   { name: "AI Assistant", href: "/ai-assistant", icon: Sparkles },
   { name: "Insights", href: "/insights", icon: TrendingUp },
   { name: "Savings", href: "/savings", icon: PiggyBank },
@@ -105,7 +106,7 @@ export function Sidebar() {
           <div className="space-y-1">
             {drawerNavigation.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
-              const isComingSoon = item.name === "Investments" || item.name === "Savings"
+              const isComingSoon = item.name === "Investments" || item.name === "Savings" || item.name === "Split Payments"
               return (
                 <Link
                   key={item.name}
