@@ -12,7 +12,8 @@ import {
     MapPin,
     Search,
     MoreVertical,
-    ChevronRight
+    Archive,
+    ArchiveRestore,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -38,6 +39,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { withProtection } from "@/lib/with-protection"
 import { AddPayeeDialog } from "@/components/add-payee-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { apiClient } from "@/lib/api-client"
 
 function PayeesPage() {
@@ -71,10 +73,27 @@ function PayeesPage() {
         },
     })
 
+    const { mutate: toggleArchive } = useMutation({
+        mutationFn: async ({ id, isArchived }: { id: string, isArchived: boolean }) => {
+            const res = await apiClient.patch(`/payees/${id}`, { isArchived })
+            return res.data
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["payees"] })
+            toast.success(variables.isArchived ? "Payee archived" : "Payee restored")
+        },
+        onError: (error) => {
+            toast.error(error.message)
+        },
+    })
+
     const filteredPayees = payees.filter((p: any) =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.email?.toLowerCase().includes(searchQuery.toLowerCase())
     )
+
+    const activePayees = filteredPayees.filter((p: any) => !p.isArchived)
+    const archivedPayees = filteredPayees.filter((p: any) => p.isArchived)
 
     const handleEdit = (payee: any) => {
         setPayeeToEdit(payee)
@@ -96,109 +115,62 @@ function PayeesPage() {
                 </AddPayeeDialog>
             </div>
 
-            <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        placeholder="Search payees by name or email..."
-                        className="pl-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+            <Tabs defaultValue="active" className="w-full">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                    <TabsList className="mb-0">
+                        <TabsTrigger value="active">Active ({activePayees.length})</TabsTrigger>
+                        <TabsTrigger value="archived">Archived ({archivedPayees.length})</TabsTrigger>
+                    </TabsList>
+                    <div className="relative w-full sm:w-72">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            placeholder="Search payees..."
+                            className="pl-10"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
-            </div>
 
-            {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map((i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardHeader className="h-32 bg-muted" />
-                        </Card>
-                    ))}
-                </div>
-            ) : filteredPayees.length === 0 ? (
-                <Card className="border-dashed">
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <User className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No payees found</h3>
-                        <p className="text-muted-foreground text-center mb-6">
-                            {searchQuery ? "Try a different search term" : "Add your first payee to start tracking payments"}
-                        </p>
-                        {!searchQuery && (
-                            <AddPayeeDialog>
-                                <Button>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Payee
-                                </Button>
-                            </AddPayeeDialog>
-                        )}
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPayees.map((payee: any) => (
-                        <Card key={payee.id} className="group hover:border-primary/50 transition-colors">
-                            <CardHeader className="pb-3">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                            {payee.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-base">{payee.name}</CardTitle>
-                                            {payee.email && (
-                                                <CardDescription className="flex items-center gap-1 mt-0.5">
-                                                    <Mail className="h-3 w-3" />
-                                                    {payee.email}
-                                                </CardDescription>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleEdit(payee)}>
-                                                <Pencil className="h-4 w-4 mr-2" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                className="text-destructive focus:text-destructive"
-                                                onClick={() => setPayeeToDelete(payee)}
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="text-sm space-y-2">
-                                {payee.phone && (
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Phone className="h-3 w-3" />
-                                        <span>{payee.phone}</span>
-                                    </div>
-                                )}
-                                {payee.address && (
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <MapPin className="h-3 w-3" />
-                                        <span className="truncate">{payee.address}</span>
-                                    </div>
-                                )}
-                                {payee.description && (
-                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-2 pt-2 border-t">
-                                        {payee.description}
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            )}
+                <TabsContent value="active">
+                    {isLoading ? (
+                        <LoadingState />
+                    ) : activePayees.length === 0 ? (
+                        <EmptyState 
+                            searchQuery={searchQuery} 
+                            title="No active payees found" 
+                            description={searchQuery ? "Try a different search term" : "Add your first payee to start tracking payments"}
+                        />
+                    ) : (
+                        <PayeeGrid 
+                            payees={activePayees} 
+                            onEdit={handleEdit} 
+                            onDelete={setPayeeToDelete} 
+                            onArchive={(id: string, archived: boolean) => toggleArchive({ id, isArchived: archived })} 
+                        />
+                    )}
+                </TabsContent>
+
+                <TabsContent value="archived">
+                    {isLoading ? (
+                        <LoadingState />
+                    ) : archivedPayees.length === 0 ? (
+                        <EmptyState 
+                            searchQuery={searchQuery} 
+                            title="No archived payees" 
+                            description={searchQuery ? "Try a different search term" : "Archived payees will appear here"}
+                            hideAdd={true}
+                        />
+                    ) : (
+                        <PayeeGrid 
+                            payees={archivedPayees} 
+                            onEdit={handleEdit} 
+                            onDelete={setPayeeToDelete} 
+                            onArchive={(id: string, archived: boolean) => toggleArchive({ id, isArchived: archived })} 
+                        />
+                    )}
+                </TabsContent>
+            </Tabs>
 
             {/* Edit Dialog */}
             <AddPayeeDialog
@@ -234,6 +206,122 @@ function PayeesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+        </div>
+    )
+}
+
+function LoadingState() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                    <CardHeader className="h-32 bg-muted" />
+                </Card>
+            ))}
+        </div>
+    )
+}
+
+function EmptyState({ searchQuery, title, description, hideAdd = false }: any) {
+    return (
+        <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+                <User className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">{title}</h3>
+                <p className="text-muted-foreground text-center mb-6">{description}</p>
+                {!searchQuery && !hideAdd && (
+                    <AddPayeeDialog>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Payee
+                        </Button>
+                    </AddPayeeDialog>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+
+function PayeeGrid({ payees, onEdit, onDelete, onArchive }: any) {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {payees.map((payee: any) => (
+                <Card key={payee.id} className="group hover:border-primary/50 transition-colors">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                    {payee.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-base">{payee.name}</CardTitle>
+                                        {payee.isArchived && <Badge variant="secondary">Archived</Badge>}
+                                    </div>
+                                    {payee.email && (
+                                        <CardDescription className="flex items-center gap-1 mt-0.5">
+                                            <Mail className="h-3 w-3" />
+                                            {payee.email}
+                                        </CardDescription>
+                                    )}
+                                </div>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => onEdit(payee)}>
+                                        <Pencil className="h-4 w-4 mr-2" />
+                                        Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onArchive(payee.id, !payee.isArchived)}>
+                                        {payee.isArchived ? (
+                                            <>
+                                                <ArchiveRestore className="h-4 w-4 mr-2" />
+                                                Restore
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Archive className="h-4 w-4 mr-2" />
+                                                Archive
+                                            </>
+                                        )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={() => onDelete(payee)}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-2">
+                        {payee.phone && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                <span>{payee.phone}</span>
+                            </div>
+                        )}
+                        {payee.address && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                <span className="truncate">{payee.address}</span>
+                            </div>
+                        )}
+                        {payee.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-2 pt-2 border-t">
+                                {payee.description}
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            ))}
         </div>
     )
 }

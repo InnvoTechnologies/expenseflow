@@ -14,8 +14,20 @@ import Link from "next/link"
 import { AddAccountDialog } from "@/components/add-account-dialog"
 import { TransactionDialog } from "@/components/add-transaction-dialog"
 import { useQuery } from "@tanstack/react-query"
-import { format } from "date-fns"
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  startOfYear, 
+  endOfYear, 
+  parseISO,
+  subMonths,
+  addMonths,
+} from "date-fns"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 import { apiClient } from "@/lib/api-client"
 
 function DashboardPage() {
@@ -24,20 +36,49 @@ function DashboardPage() {
   const { user } = useAuth()
   const { formatAmount } = useCurrency()
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [viewMode, setViewMode] = useState<"monthly" | "weekly" | "yearly" | "custom">("monthly")
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"))
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString())
+  const [customRange, setCustomRange] = useState<{ from: string, to: string }>({
+    from: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    to: format(new Date(), "yyyy-MM-dd")
+  })
+
   const [skippedSteps, setSkippedSteps] = useState<string[]>([])
-  const [profileStepComplete, setProfileStepComplete] = useState(false)
 
-  // Format month for display
-  const monthDisplay = new Date(selectedMonth + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  // Calculate Date Range based on viewMode
+  let fromDate: string;
+  let toDate: string;
+  let displayRange: string;
 
-
+  if (viewMode === "monthly") {
+    const d = parseISO(selectedMonth + "-01");
+    fromDate = format(startOfMonth(d), "yyyy-MM-dd");
+    toDate = format(endOfMonth(d), "yyyy-MM-dd");
+    displayRange = format(d, "MMMM yyyy");
+  } else if (viewMode === "weekly") {
+    const now = new Date();
+    const start = startOfWeek(now, { weekStartsOn: 1 });
+    const end = endOfWeek(now, { weekStartsOn: 1 });
+    fromDate = format(start, "yyyy-MM-dd");
+    toDate = format(end, "yyyy-MM-dd");
+    displayRange = `This Week (${format(start, "MMM d")} - ${format(end, "MMM d")})`;
+  } else if (viewMode === "yearly") {
+    const d = parseISO(selectedYear + "-01-01");
+    fromDate = format(startOfYear(d), "yyyy-MM-dd");
+    toDate = format(endOfYear(d), "yyyy-MM-dd");
+    displayRange = `Full Year ${selectedYear}`;
+  } else {
+    fromDate = customRange.from || format(new Date(), "yyyy-MM-dd");
+    toDate = customRange.to || format(new Date(), "yyyy-MM-dd");
+    displayRange = `${format(parseISO(fromDate), "MMM d, yyyy")} - ${format(parseISO(toDate), "MMM d, yyyy")}`;
+  }
 
   // Fetch Dashboard Data
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard", selectedMonth],
+    queryKey: ["dashboard", fromDate, toDate],
     queryFn: async () => {
-      const res = await apiClient.get(`/dashboard?month=${selectedMonth}`)
+      const res = await apiClient.get(`/dashboard?from=${fromDate}&to=${toDate}`)
       return res.data
     }
   })
@@ -54,16 +95,20 @@ function DashboardPage() {
         setSkippedSteps([])
       }
     }
-    setProfileStepComplete(localStorage.getItem("onboardingProfileComplete") === "true")
   }, [])
 
-  // Generate last 12 months for selector
+  // Generate years for selector (current and last 5)
+  const yearOptions = Array.from({ length: 6 }, (_, i) => {
+    const year = (new Date().getFullYear() - i).toString()
+    return { value: year, label: year }
+  })
+
+  // Generate months for selector
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
+    const d = subMonths(new Date(), i)
     return {
-      value: d.toISOString().slice(0, 7),
-      label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      value: format(d, "yyyy-MM"),
+      label: format(d, "MMMM yyyy")
     }
   })
 
@@ -91,7 +136,7 @@ function DashboardPage() {
   const { totalBalance = 0, monthlyIncome = 0, monthlyExpense = 0, recentTransactions = [], accounts = [], onboarding } = data || {}
 
   const steps = [
-    { key: "profile", title: "Set currency and country", href: "/settings", done: profileStepComplete },
+    // { key: "profile", title: "Set currency and country", href: "/settings", done: profileStepComplete },
     { key: "categories", title: "Create categories", href: "/categories", done: (onboarding?.categoriesCount || 0) > 0 },
     { key: "payees", title: "Create payees", href: "/payees", done: (onboarding?.payeesCount || 0) > 0 },
     { key: "transaction", title: "Make your first transaction", href: "/transactions", done: (onboarding?.transactionsCount || 0) > 0 },
@@ -114,99 +159,160 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Month Selector */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* Header with Range Selector */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">
             {greeting}, {user?.name || "User"}
           </h1>
-          <p className="text-muted-foreground">Here's your financial overview for {monthDisplay}</p>
+          <p className="text-muted-foreground">Financial overview for {displayRange}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => {
-            const date = new Date(selectedMonth + "-01")
-            date.setMonth(date.getMonth() - 1)
-            setSelectedMonth(date.toISOString().slice(0, 7))
-          }}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[180px]">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={viewMode} onValueChange={(v: any) => setViewMode(v)}>
+            <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {monthOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={() => {
-            const date = new Date(selectedMonth + "-01")
-            date.setMonth(date.getMonth() + 1)
-            setSelectedMonth(date.toISOString().slice(0, 7))
-          }}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+
+          {viewMode === "monthly" && (
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" onClick={() => {
+                const d = parseISO(selectedMonth + "-01")
+                setSelectedMonth(format(subMonths(d, 1), "yyyy-MM"))
+              }}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon" onClick={() => {
+                const d = parseISO(selectedMonth + "-01")
+                setSelectedMonth(format(addMonths(d, 1), "yyyy-MM"))
+              }}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {viewMode === "yearly" && (
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" onClick={() => {
+                setSelectedYear((parseInt(selectedYear) - 1).toString())
+              }}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon" onClick={() => {
+                setSelectedYear((parseInt(selectedYear) + 1).toString())
+              }}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {viewMode === "custom" && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                className="w-[140px]"
+                value={customRange.from}
+                onChange={(e) => setCustomRange(prev => ({ ...prev, from: e.target.value }))}
+              />
+              <span className="text-muted-foreground">-</span>
+              <Input
+                type="date"
+                className="w-[140px]"
+                value={customRange.to}
+                onChange={(e) => setCustomRange(prev => ({ ...prev, to: e.target.value }))}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Getting started</CardTitle>
-              <p className="text-sm text-muted-foreground">Complete these steps to get more out of ExpenseFlow</p>
+      {completedSteps < totalSteps && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Getting started</CardTitle>
+                <p className="text-sm text-muted-foreground">Complete these steps to get more out of ExpenseFlow</p>
+              </div>
+              <div className="text-sm text-muted-foreground">{completedSteps}/{totalSteps}</div>
             </div>
-            <div className="text-sm text-muted-foreground">{completedSteps}/{totalSteps}</div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Progress value={progressValue} />
-          <div className="space-y-3">
-            {steps.map(step => {
-              const isSkipped = step.optional && skippedSteps.includes(step.key)
-              const isDone = step.done || isSkipped
-              return (
-                <div key={step.key} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="flex items-center gap-3">
-                    {isDone ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <div className="space-y-1">
-                      <p className={cn("font-medium", isDone && "text-muted-foreground line-through")}>{step.title}</p>
-                      <div className="flex items-center gap-2">
-                        {step.optional && !isDone && <Badge variant="outline">Optional</Badge>}
-                        {isSkipped && <Badge variant="secondary">Skipped</Badge>}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Progress value={progressValue} />
+            <div className="space-y-3">
+              {steps.map(step => {
+                const isSkipped = step.optional && skippedSteps.includes(step.key)
+                const isDone = step.done || isSkipped
+                return (
+                  <div key={step.key} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      {isDone ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <div className="space-y-1">
+                        <p className={cn("font-medium", isDone && "text-muted-foreground line-through")}>{step.title}</p>
+                        <div className="flex items-center gap-2">
+                          {step.optional && !isDone && <Badge variant="outline">Optional</Badge>}
+                          {isSkipped && <Badge variant="secondary">Skipped</Badge>}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      {!step.done && !isSkipped && (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={step.href}>Start</Link>
+                        </Button>
+                      )}
+                      {step.optional && !step.done && !isSkipped && (
+                        <Button variant="ghost" size="sm" onClick={() => toggleSkip(step.key, true)}>
+                          Skip
+                        </Button>
+                      )}
+                      {isSkipped && (
+                        <Button variant="ghost" size="sm" onClick={() => toggleSkip(step.key, false)}>
+                          Unskip
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {!step.done && !isSkipped && (
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={step.href}>Start</Link>
-                      </Button>
-                    )}
-                    {step.optional && !step.done && !isSkipped && (
-                      <Button variant="ghost" size="sm" onClick={() => toggleSkip(step.key, true)}>
-                        Skip
-                      </Button>
-                    )}
-                    {isSkipped && (
-                      <Button variant="ghost" size="sm" onClick={() => toggleSkip(step.key, false)}>
-                        Unskip
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -228,7 +334,7 @@ function DashboardPage() {
             <div className="text-3xl font-bold text-green-600">{formatAmount(monthlyIncome)}</div>
             <div className="flex items-center mt-1">
               <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-              <span className="text-xs text-muted-foreground">{monthDisplay}</span>
+              <span className="text-xs text-muted-foreground">{displayRange}</span>
             </div>
           </CardContent>
         </Card>
@@ -241,7 +347,7 @@ function DashboardPage() {
             <div className="text-3xl font-bold text-red-600">{formatAmount(monthlyExpense)}</div>
             <div className="flex items-center mt-1">
               <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-              <span className="text-xs text-muted-foreground">{monthDisplay}</span>
+              <span className="text-xs text-muted-foreground">{displayRange}</span>
             </div>
           </CardContent>
         </Card>
@@ -413,7 +519,7 @@ function DashboardPage() {
               {recentTransactions.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <p className="mb-2">No transactions found</p>
-                  <p className="text-sm">Press the "+" button to add your first transaction</p>
+                  <p className="text-sm">Press the &quot;+&quot; button to add your first transaction</p>
                 </div>
               ) : (
                 recentTransactions.map((t: any) => (

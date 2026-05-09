@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
 import { payee } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
 const createPayeeSchema = z.object({
@@ -14,7 +14,7 @@ const createPayeeSchema = z.object({
     description: z.string().optional(),
 });
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
     const session = await auth.api.getSession({
         headers: await headers(),
     });

@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const monthParam = searchParams.get("month"); // Format: YYYY-MM
+    const fromParam = searchParams.get("from"); // Format: YYYY-MM-DD
+    const toParam = searchParams.get("to"); // Format: YYYY-MM-DD
 
     const headersList = await headers();
     const activeOrgId = headersList.get("X-Organization-Id");
@@ -111,10 +113,20 @@ export async function GET(req: NextRequest) {
         // Calculate Total Balance
         const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.currentBalance), 0);
 
-        // 2. Date Range for Month Stats
-        const date = monthParam ? parseISO(`${monthParam}-01`) : new Date();
-        const startDate = startOfMonth(date);
-        const endDate = endOfMonth(date);
+        // 2. Date Range for Stats
+        let startDate: Date;
+        let endDate: Date;
+
+        if (fromParam && toParam) {
+            startDate = parseISO(fromParam);
+            endDate = parseISO(toParam);
+            // Ensure endDate is end of day
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            const date = monthParam ? parseISO(`${monthParam}-01`) : new Date();
+            startDate = startOfMonth(date);
+            endDate = endOfMonth(date);
+        }
 
         // 3. Fetch Monthly Income & Expense
         // We need to query transactions within date range for our accounts
