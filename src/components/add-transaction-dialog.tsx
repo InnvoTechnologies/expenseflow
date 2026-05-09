@@ -237,7 +237,16 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
       }))
     }
   }, [activeTab, form, transactionToEdit])
-
+  
+  // Auto-selection for single options
+  useEffect(() => {
+    if (open && !transactionToEdit) {
+      // Auto-select Account
+      if (accounts.length === 1 && !form.getValues("accountId")) {
+        form.setValue("accountId", accounts[0].id);
+      }
+    }
+  }, [open, transactionToEdit, accounts, expenseCategories, incomeCategories, payees, subscriptions, activeTab, form]);
 
   const createMutation = useMutation({
     mutationFn: async (values: TransactionFormValues) => {

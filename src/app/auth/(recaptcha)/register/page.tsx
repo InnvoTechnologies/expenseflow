@@ -293,11 +293,11 @@ export default function RegisterPage() {
               />
               <Label htmlFor="terms" className="text-sm">
                 I agree to the{" "}
-                <Link href="/terms" className="text-primary hover:underline">
+                <Link href={`${process.env.NEXT_PUBLIC_WEBSITE_URL}/terms`} className="text-primary hover:underline">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-primary hover:underline">
+                <Link href={`${process.env.NEXT_PUBLIC_WEBSITE_URL}/privacy`} className="text-primary hover:underline">
                   Privacy Policy
                 </Link>
               </Label>
