@@ -41,6 +41,7 @@ import { apiClient } from "@/lib/api-client"
 import { useOrganizationScope } from "@/hooks/use-organization-scope"
 import posthog from "posthog-js"
 import { TagInput } from "./tag-input"
+import { numberToWords } from "@/lib/number-to-words"
 
 const COLORS = [
   "#EF4444", "#F97316", "#F59E0B", "#84CC16", "#10B981",
@@ -395,6 +396,11 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                           />
                         </FormControl>
                       </div>
+                      {field.value && !isNaN(Number(field.value)) && Number(field.value) > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                          {numberToWords(Number(field.value))}
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -418,6 +424,11 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                           />
                         </FormControl>
                       </div>
+                      {field.value && !isNaN(Number(field.value)) && Number(field.value) > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                          {numberToWords(Number(field.value))}
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -463,8 +474,11 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                 />
               )}
 
-              {/* Account Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Account and Date Selection */}
+              <div className={cn(
+                "grid grid-cols-1 gap-4",
+                activeTab === "TRANSFER" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+              )}>
                 <FormField
                   control={form.control}
                   name="accountId"
@@ -516,9 +530,7 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     )}
                   />
                 )}
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="date"
@@ -532,8 +544,10 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     </FormItem>
                   )}
                 />
+              </div>
 
-                {activeTab === "EXPENSE" && (
+              {activeTab === "EXPENSE" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="payeeId"
@@ -562,38 +576,36 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                       </FormItem>
                     )}
                   />
-                )}
-              </div>
 
-              {activeTab === "EXPENSE" && (
-                <FormField
-                  control={form.control}
-                  name="subscriptionId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subscription (Optional)</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
-                        value={field.value || undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subscription (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">None</SelectItem>
-                          {subscriptions.map((sub: any) => (
-                            <SelectItem key={sub.id} value={sub.id}>
-                              {sub.title} ({baseCurrency} {parseFloat(sub.amount).toFixed(2)})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="subscriptionId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subscription (Optional)</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
+                          value={field.value || undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select subscription (optional)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">None</SelectItem>
+                            {subscriptions.map((sub: any) => (
+                              <SelectItem key={sub.id} value={sub.id}>
+                                {sub.title} ({baseCurrency} {parseFloat(sub.amount).toFixed(2)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               )}
 
               <FormField
