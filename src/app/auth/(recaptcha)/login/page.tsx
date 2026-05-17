@@ -340,7 +340,7 @@ export default function LoginPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <Logo width={200} priority />
@@ -352,7 +352,7 @@ export default function LoginPage() {
           <Button 
             type="button" 
             variant="outline" 
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2 rounded-full"
             onClick={async () => {
               setIsLoading(true)
               try {
@@ -411,9 +411,9 @@ export default function LoginPage() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="otp">Email OTP</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 rounded-full p-1 h-auto bg-zinc-100 dark:bg-white/5">
+              <TabsTrigger value="password" className="rounded-full py-2">Password</TabsTrigger>
+              <TabsTrigger value="otp" className="rounded-full py-2">Email OTP</TabsTrigger>
             </TabsList>
             
             {/* Password Tab */}
@@ -427,6 +427,7 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
                     required
                   />
                 </div>
@@ -439,13 +440,14 @@ export default function LoginPage() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent pr-10"
                       required
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-full"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -464,7 +466,7 @@ export default function LoginPage() {
                 <div className="mt-2 hidden">
                   <div ref={turnstileRef} className="min-h-[65px]"></div>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
@@ -482,13 +484,14 @@ export default function LoginPage() {
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
                     />
                   </div>
                   
                   <Button
                     onClick={handleSendCode}
                     disabled={!email.trim() || isLoading}
-                    className="w-full"
+                    className="w-full rounded-full"
                   >
                     {isLoading ? "Sending..." : "Send Verification Code"}
                   </Button>
@@ -527,7 +530,7 @@ export default function LoginPage() {
                   <Button
                     onClick={handleVerifyCode}
                     disabled={!code.trim() || isLoading}
-                    className="w-full"
+                    className="w-full rounded-full"
                   >
                     {isLoading ? "Verifying..." : "Sign In"}
                   </Button>

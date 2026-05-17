@@ -62,19 +62,20 @@ export function Sidebar() {
   const navigationItems = [...navigation]
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col dark:bg-[#09090B] border-r dark:border-white/5">
       {/* Header */}
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+      <div className="flex h-14 items-center border-b dark:border-white/5 px-4 lg:h-[60px] lg:px-6 shrink-0">
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold transition-opacity hover:opacity-80">
           <Logo width={200} priority />
         </Link>
       </div>
 
       {/* Navigation - Scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <nav className="grid gap-1 items-start px-2 py-2 text-sm font-medium lg:px-4">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex flex-col gap-1 items-start px-3 py-3 text-sm font-medium">
           {/* Main Navigation */}
-          <div className="space-y-1">
+          <div className="space-y-0.5 w-full">
+            <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Core</div>
             {navigationItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
               const isComingSoon = item.name === "Savings"
@@ -83,15 +84,15 @@ export function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-2 py-2 text-muted-foreground transition-all hover:text-primary",
-                    isActive && "bg-muted text-primary"
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-zinc-500 transition-all hover:text-zinc-900 dark:hover:text-zinc-200 dark:hover:bg-white/5",
+                    isActive && "bg-zinc-100 text-zinc-900 dark:bg-white/5 dark:text-zinc-100"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
-                  <span className="flex-1">{item.name}</span>
+                  <item.icon className="h-[18px] w-[18px] stroke-[1.5]" />
+                  <span className="flex-1 font-medium text-[13px]">{item.name}</span>
                   {isComingSoon && (
-                    <Badge variant="default" className="text-xs">
-                      Coming Soon
+                    <Badge variant="outline" className="text-[10px] uppercase font-semibold tracking-wider dark:border-white/10 dark:bg-transparent dark:text-zinc-500">
+                      Soon
                     </Badge>
                   )}
                 </Link>
@@ -100,10 +101,11 @@ export function Sidebar() {
           </div>
 
           {/* Divider */}
-          <div className="my-2 border-t border-border" />
+          <div className="my-2 w-full border-t dark:border-white/5" />
 
           {/* Drawer Navigation */}
-          <div className="space-y-1">
+          <div className="space-y-0.5 w-full">
+            <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Manage</div>
             {drawerNavigation.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
               const isComingSoon = item.name === "Investments" || item.name === "Savings" || item.name === "Split Payments"
@@ -112,15 +114,15 @@ export function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-2 py-2 text-muted-foreground transition-all hover:text-primary",
-                    isActive && "bg-muted text-primary"
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-zinc-500 transition-all hover:text-zinc-900 dark:hover:text-zinc-200 dark:hover:bg-white/5",
+                    isActive && "bg-zinc-100 text-zinc-900 dark:bg-white/5 dark:text-zinc-100"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
-                  <span className="flex-1">{item.name}</span>
+                  <item.icon className="h-[18px] w-[18px] stroke-[1.5]" />
+                  <span className="flex-1 font-medium text-[13px]">{item.name}</span>
                   {isComingSoon && (
-                    <Badge variant="default" className="text-xs">
-                      Coming Soon
+                    <Badge variant="outline" className="text-[10px] uppercase font-semibold tracking-wider dark:border-white/10 dark:bg-transparent dark:text-zinc-500">
+                      Soon
                     </Badge>
                   )}
                 </Link>
@@ -131,7 +133,7 @@ export function Sidebar() {
       </div>
 
       {/* Fixed Bottom Section */}
-      <div className="sticky bottom-0 bg-background border-t p-2 shrink-0 space-y-4">
+      <div className="sticky bottom-0 dark:bg-[#09090B] border-t dark:border-white/5 p-2 shrink-0">
         {/* <UsageWidget /> */}
         <UserProfile />
       </div>

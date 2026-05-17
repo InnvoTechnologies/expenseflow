@@ -187,7 +187,7 @@ export default function OrganizationsPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
+          <h1 className="text-3xl sm:text-4xl font-medium tracking-tight">Organizations</h1>
           <p className="text-muted-foreground">
             Manage your organizations and team access
           </p>
@@ -195,7 +195,7 @@ export default function OrganizationsPage() {
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="rounded-full">
               <Plus className="h-4 w-4 mr-2" />
               Create Organization
             </Button>
@@ -213,7 +213,7 @@ export default function OrganizationsPage() {
                   id="org-name"
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}
-                  placeholder="Enter organization name"
+                  className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
                 />
               </div>
               
@@ -223,7 +223,7 @@ export default function OrganizationsPage() {
                   id="org-slug"
                   value={newOrgSlug}
                   onChange={(e) => setNewOrgSlug(e.target.value)}
-                  placeholder="enter-org-slug"
+                  className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   This will be used in URLs and cannot be changed later.
@@ -234,14 +234,14 @@ export default function OrganizationsPage() {
                 <Button
                   variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreateOrganization}
                   disabled={!newOrgName.trim() || !newOrgSlug.trim() || isCreating}
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                 >
                   {isCreating ? "Creating..." : "Create Organization"}
                 </Button>
@@ -265,7 +265,7 @@ export default function OrganizationsPage() {
                 id="edit-org-name"
                 value={editOrgName}
                 onChange={(e) => setEditOrgName(e.target.value)}
-                placeholder="Enter organization name"
+                className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
               />
             </div>
             
@@ -275,7 +275,7 @@ export default function OrganizationsPage() {
                 id="edit-org-slug"
                 value={editOrgSlug}
                 disabled
-                placeholder="enter-org-slug"
+                className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
               />
               <p className="text-sm text-muted-foreground mt-1">
                 This will be used in URLs and cannot be changed later.
@@ -287,12 +287,14 @@ export default function OrganizationsPage() {
                 variant="outline"
                 onClick={() => setIsEditDialogOpen(false)}
                 disabled={isUpdating}
+                className="rounded-full"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleUpdateOrganization}
                 disabled={!editOrgName.trim() || isUpdating}
+                className="rounded-full"
               >
                 {isUpdating ? "Updating..." : "Update Organization"}
               </Button>
@@ -302,7 +304,7 @@ export default function OrganizationsPage() {
       </Dialog>
 
       {/* Personal Account Card */}
-      <Card>
+      <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
@@ -341,7 +343,7 @@ export default function OrganizationsPage() {
       {/* Organizations */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {organizations.map((org) => (
-          <Card key={org.id}>
+          <Card key={org.id} className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
@@ -373,7 +375,7 @@ export default function OrganizationsPage() {
                   <Button
                     variant={activeOrganization?.id === org.id ? "default" : "outline"}
                     onClick={() => handleSetActive(org)}
-                    className="flex-1"
+                    className="flex-1 rounded-full"
                   >
                     {activeOrganization?.id === org.id ? "Active" : "Switch to"}
                   </Button>
@@ -381,7 +383,7 @@ export default function OrganizationsPage() {
                     <div className="flex gap-1">
                       <Button 
                         variant="outline" 
-                        size="sm"
+                        className="rounded-full h-8 w-8 p-0"
                         onClick={() => handleEditOrganization(org)}
                         title="Edit organization"
                       >
@@ -392,7 +394,7 @@ export default function OrganizationsPage() {
                         size="sm"
                         onClick={() => handleDeleteOrganization(org)}
                         title="Delete organization"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="rounded-full h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -406,14 +408,14 @@ export default function OrganizationsPage() {
       </div>
 
       {organizations.length === 0 && !isLoading && (
-        <Card>
+        <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No organizations yet</h3>
             <p className="text-muted-foreground text-center mb-4">
               Create your first organization to start collaborating with your team.
             </p>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="rounded-full">
               <Plus className="h-4 w-4 mr-2" />
               Create Organization
             </Button>
@@ -440,6 +442,7 @@ export default function OrganizationsPage() {
                 variant="outline"
                 onClick={() => setIsDeleteDialogOpen(false)}
                 disabled={isDeleting}
+                className="rounded-full"
               >
                 Cancel
               </Button>
@@ -447,6 +450,7 @@ export default function OrganizationsPage() {
                 variant="destructive"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
+                className="rounded-full"
               >
                 {isDeleting ? "Deleting..." : "Delete Organization"}
               </Button>

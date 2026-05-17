@@ -222,7 +222,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
         {/* Left Column - Profile Card */}
         <div className="lg:col-span-1">
-          <Card>
+          <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
             <CardContent className="p-4 sm:p-6 text-center">
               <div className="relative inline-block mb-4">
                 <Avatar className="h-24 w-24">
@@ -262,16 +262,16 @@ export default function SettingsPage() {
         <div className="lg:col-span-3 space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-xl sm:text-2xl font-semibold">Settings</h1>
+            <h1 className="text-3xl sm:text-4xl font-medium tracking-tight">Settings</h1>
           </div>
 
           <Tabs defaultValue="general" className="space-y-4">
-            <TabsList className="w-full overflow-x-auto h-auto min-h-10 justify-start scrollbar-hide">
-              <TabsTrigger value="general" className="flex-shrink-0 text-xs sm:text-sm">General</TabsTrigger>
-              <TabsTrigger value="security" className="flex-shrink-0 text-xs sm:text-sm">Security</TabsTrigger>
-              <TabsTrigger value="currency" className="flex-shrink-0 text-xs sm:text-sm">Currency</TabsTrigger>
-              <TabsTrigger value="backup" className="flex-shrink-0 text-xs sm:text-sm">Backup & Restore</TabsTrigger>
-              <TabsTrigger value="sessions" className="flex-shrink-0 text-xs sm:text-sm">Sessions</TabsTrigger>
+            <TabsList className="w-full overflow-x-auto h-auto min-h-10 justify-start scrollbar-hide rounded-full p-1 dark:bg-[#121214]">
+              <TabsTrigger value="general" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">General</TabsTrigger>
+              <TabsTrigger value="security" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Security</TabsTrigger>
+              <TabsTrigger value="currency" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Currency</TabsTrigger>
+              <TabsTrigger value="backup" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Backup & Restore</TabsTrigger>
+              <TabsTrigger value="sessions" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Sessions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-4">
@@ -282,14 +282,14 @@ export default function SettingsPage() {
                   onClick={isEditing ? handleSave : () => setIsEditing(true)}
                   disabled={isEditing ? saveProfile.isPending : false}
                   aria-busy={isEditing && saveProfile.isPending}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-full"
                 >
                   {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Pencil className="h-4 w-4 mr-2" />}
                   {isEditing ? (saveProfile.isPending ? "Saving..." : "Save Changes") : "Edit Profile"}
                 </Button>
               </div>
 
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>
                 </CardHeader>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
               </Card>
 
               {/* Appearance Settings */}
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle>Appearance</CardTitle>
                 </CardHeader>
@@ -362,7 +362,7 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="security" className="space-y-4">
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Lock className="h-5 w-5" />
@@ -399,7 +399,7 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle>Password & Security</CardTitle>
                 </CardHeader>
@@ -513,7 +513,7 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="sessions" className="space-y-4">
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -629,7 +629,7 @@ export default function SettingsPage() {
                 </AlertDescription>
               </Alert>
 
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle className="text-sm">Quick Actions</CardTitle>
                 </CardHeader>
@@ -643,7 +643,7 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="currency" className="space-y-4">
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5" />
@@ -724,7 +724,7 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="backup" className="space-y-4">
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle>Backup & Restore</CardTitle>
                 </CardHeader>
@@ -749,7 +749,7 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardHeader>
                   <CardTitle className="text-destructive">Danger Zone</CardTitle>
                 </CardHeader>

@@ -77,25 +77,25 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Add Account</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-semibold tracking-tight">Add Account</DialogTitle>
+          <DialogDescription className="text-zinc-500 dark:text-zinc-400">
             Create a new account to track your finances
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Account Name</Label>
-            <Input id="name" placeholder="e.g., My Wallet" />
+            <Input id="name" placeholder="e.g., My Wallet" className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
           </div>
           <div className="space-y-2">
             <Label>Account Type</Label>
             <Select value={accountType} onValueChange={handleAccountTypeChange}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                 <SelectValue placeholder="Select account type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                 {accountTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     <div className="flex items-center gap-2">
@@ -113,10 +113,10 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
               value={selectedCurrency || baseCurrency} 
               onValueChange={setSelectedCurrency}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
+              <SelectContent className="max-h-[300px] rounded-2xl dark:bg-[#121214] dark:border-white/10">
                 {currencyList.map((currency) => (
                   <SelectItem key={currency.code} value={currency.code}>
                     {currency.code} - {currency.name}
@@ -127,17 +127,17 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="openingBalance">Opening Balance</Label>
-            <Input id="openingBalance" type="number" placeholder="0.00" />
+            <Input id="openingBalance" type="number" placeholder="0.00" className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
           </div>
           {isPersonAccount && (
             <>
               <div className="space-y-2">
                 <Label>Direction</Label>
                 <Select defaultValue="receivable">
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                     <SelectItem value="receivable">Receivable (They owe me)</SelectItem>
                     <SelectItem value="payable">Payable (I owe them)</SelectItem>
                   </SelectContent>
@@ -145,24 +145,24 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone (Optional)</Label>
-                <Input id="phone" type="tel" placeholder="+92 300 1234567" />
+                <Input id="phone" type="tel" placeholder="+92 300 1234567" className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email (Optional)</Label>
-                <Input id="email" type="email" placeholder="person@example.com" />
+                <Input id="email" type="email" placeholder="person@example.com" className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="note">Note (Optional)</Label>
-                <Input id="note" placeholder="Additional information" />
+                <Input id="note" placeholder="Additional information" className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
               </div>
             </>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <DialogFooter className="pt-4 mt-2">
+          <Button variant="ghost" onClick={() => setOpen(false)} className="rounded-full hover:dark:bg-white/5">
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={handleSubmit} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
             Create Account
           </Button>
         </DialogFooter>

@@ -208,10 +208,10 @@ export function AddSubscriptionDialog({
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
                 <DialogHeader>
-                    <DialogTitle>{subscriptionToEdit ? "Edit Subscription" : "Add Subscription"}</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-2xl font-semibold tracking-tight">{subscriptionToEdit ? "Edit Subscription" : "Add Subscription"}</DialogTitle>
+                    <DialogDescription className="text-zinc-500 dark:text-zinc-400">
                         {subscriptionToEdit
                             ? "Update your subscription details"
                             : "Track recurring payments and get notified before they're due"}
@@ -227,7 +227,7 @@ export function AddSubscriptionDialog({
                                 <FormItem>
                                     <FormLabel>Title</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Netflix Premium" {...field} />
+                                        <Input placeholder="Netflix Premium" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -244,6 +244,7 @@ export function AddSubscriptionDialog({
                                     <FormControl>
                                         <Textarea
                                             placeholder="Add additional details..."
+                                            className="rounded-2xl bg-zinc-100/50 dark:bg-white/5 border-transparent px-4 py-3"
                                             {...field}
                                         />
                                     </FormControl>
@@ -261,7 +262,7 @@ export function AddSubscriptionDialog({
                                     <FormItem>
                                         <FormLabel>Start Date</FormLabel>
                                         <FormControl>
-                                            <Input type="date" {...field} />
+                                            <Input type="date" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4 w-full relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -276,11 +277,11 @@ export function AddSubscriptionDialog({
                                         <FormLabel>Billing Cycle</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                                                     <SelectValue placeholder="Select cycle" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                                                 <SelectItem value="DAILY">Daily</SelectItem>
                                                 <SelectItem value="WEEKLY">Weekly</SelectItem>
                                                 <SelectItem value="MONTHLY">Monthly</SelectItem>
@@ -308,7 +309,7 @@ export function AddSubscriptionDialog({
                                                 type="number"
                                                 step="0.01"
                                                 placeholder="0.00"
-                                                className="text-2xl font-bold"
+                                                className="text-2xl font-bold rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -330,11 +331,11 @@ export function AddSubscriptionDialog({
                                         value={field.value || undefined}
                                     >
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select category" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
+                                                <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
+                                                    <SelectValue placeholder="Select category" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                                             <SelectItem value="__none__">None</SelectItem>
                                             {categories.map((cat: any) => (
                                                 <SelectItem key={cat.id} value={cat.id}>
@@ -360,11 +361,11 @@ export function AddSubscriptionDialog({
                                         value={field.value || undefined}
                                     >
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select account" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
+                                                <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
+                                                    <SelectValue placeholder="Select account" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                                             <SelectItem value="__none__">None</SelectItem>
                                             {accounts.map((acc: any) => (
                                                 <SelectItem key={acc.id} value={acc.id}>
@@ -383,7 +384,7 @@ export function AddSubscriptionDialog({
                             control={form.control}
                             name="reminderEnabled"
                             render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <FormItem className="flex flex-row items-center justify-between rounded-[20px] dark:bg-[#121214] dark:border-white/5 border p-4">
                                     <div className="space-y-0.5">
                                         <FormLabel className="text-base">Enable Reminders</FormLabel>
                                         <FormDescription>
@@ -418,6 +419,7 @@ export function AddSubscriptionDialog({
                                                 placeholder="e.g., 3"
                                                 value={field.value || ""}
                                                 onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                                className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -426,15 +428,16 @@ export function AddSubscriptionDialog({
                             />
                         )}
 
-                        <DialogFooter>
+                        <DialogFooter className="pt-4 mt-2 border-t dark:border-white/5">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 onClick={() => setOpen(false)}
+                                className="rounded-full hover:dark:bg-white/5"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isPending}>
+                            <Button type="submit" disabled={isPending} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
                                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {subscriptionToEdit ? "Update Subscription" : "Create Subscription"}
                             </Button>
