@@ -121,11 +121,11 @@ function TransactionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Transactions</h1>
-          <p className="text-muted-foreground">View and manage all your transactions</p>
+          <h1 className="text-3xl font-medium tracking-tight">Transactions</h1>
+          <p className="text-sm text-zinc-500 mt-1">View and manage all your transactions</p>
         </div>
         <TransactionDialog>
-          <Button>
+          <Button className="rounded-full">
             <Plus className="mr-2 h-4 w-4" />
             Add Transaction
           </Button>
@@ -133,13 +133,14 @@ function TransactionsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={type === "ALL" ? "default" : "outline"}
                 size="sm"
+                className="rounded-full"
                 onClick={() => { setType("ALL"); setPage(1); }}
               >
                 All
@@ -147,6 +148,7 @@ function TransactionsPage() {
               <Button
                 variant={type === "EXPENSE" ? "default" : "outline"}
                 size="sm"
+                className="rounded-full"
                 onClick={() => { setType("EXPENSE"); setPage(1); }}
               >
                 Expense
@@ -154,6 +156,7 @@ function TransactionsPage() {
               <Button
                 variant={type === "INCOME" ? "default" : "outline"}
                 size="sm"
+                className="rounded-full"
                 onClick={() => { setType("INCOME"); setPage(1); }}
               >
                 Income
@@ -161,6 +164,7 @@ function TransactionsPage() {
               <Button
                 variant={type === "TRANSFER" ? "default" : "outline"}
                 size="sm"
+                className="rounded-full"
                 onClick={() => { setType("TRANSFER"); setPage(1); }}
               >
                 Transfer
@@ -172,7 +176,7 @@ function TransactionsPage() {
                 placeholder="Search transactions..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8"
+                className="pl-8 rounded-full dark:bg-black border-transparent dark:border-white/5"
               />
             </div>
           </div>
@@ -180,16 +184,16 @@ function TransactionsPage() {
       </Card>
 
       {/* Transactions List */}
-      <Card>
-        <CardHeader>
+      <Card className="border-none shadow-none bg-transparent">
+        <CardHeader className="px-0 pt-0">
           <div className="flex items-center justify-between">
-            <CardTitle>Recent Transactions</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <CardTitle className="text-lg font-medium">Recent Transactions</CardTitle>
+            <p className="text-sm text-zinc-500">
               Showing {transactions.length} of {metadata.total}
             </p>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 pb-0">
           {transactions.length === 0 ? (
             <div className="text-center py-12">
               <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -210,19 +214,19 @@ function TransactionsPage() {
                 }, {} as Record<string, any[]>)
               ) as [string, any[]][]).map(([date, dateTransactions]) => (
                 <div key={date}>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">{date}</h3>
-                  <div className="space-y-2">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3 ml-2">{date}</h3>
+                  <div className="space-y-3">
                     {dateTransactions.map((transaction) => (
                       <div
                         key={transaction.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors group relative"
+                        className="flex items-center justify-between p-4 rounded-[20px] dark:bg-[#121214] bg-zinc-50 border border-transparent dark:border-white/5 hover:dark:bg-white/5 transition-all group relative"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <div className={cn(
-                            "h-10 w-10 rounded-full flex items-center justify-center bg-muted shrink-0",
-                            transaction.type === "EXPENSE" && "bg-red-100 dark:bg-red-900/20",
-                            transaction.type === "INCOME" && "bg-green-100 dark:bg-green-900/20",
-                            transaction.type === "TRANSFER" && "bg-blue-100 dark:bg-blue-900/20",
+                            "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
+                            transaction.type === "EXPENSE" ? "bg-red-100 dark:bg-red-900/20 text-red-500" :
+                            transaction.type === "INCOME" ? "bg-green-100 dark:bg-green-900/20 text-green-500" :
+                            "bg-blue-100 dark:bg-blue-900/20 text-blue-500"
                           )}>
                             {getTransactionIcon(transaction.type)}
                           </div>
@@ -241,14 +245,14 @@ function TransactionsPage() {
 
                               {/* Subscription Badge */}
                               {transaction.subscription && (
-                                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                                <Badge variant="secondary" className="text-[10px] h-5 gap-1 rounded-full border-transparent">
                                   <Repeat className="h-3 w-3" />
                                   Sub
                                 </Badge>
                               )}
                             </div>
 
-                            <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-muted-foreground mt-0.5">
+                            <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-500 mt-1">
                               <span>{transaction.category?.name || transaction.type}</span>
                               <span>•</span>
                               <span>{transaction.account?.name}</span>
@@ -289,9 +293,9 @@ function TransactionsPage() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className={cn(
-                              "font-semibold",
-                              transaction.type === "EXPENSE" && "text-red-600",
-                              transaction.type === "INCOME" && "text-green-600",
+                              "font-medium text-sm",
+                              transaction.type === "EXPENSE" && "text-red-500 dark:text-red-400",
+                              transaction.type === "INCOME" && "text-green-500 dark:text-green-400",
                             )}>
                               {formatAmount(transaction.amount, transaction.type)}
                             </p>

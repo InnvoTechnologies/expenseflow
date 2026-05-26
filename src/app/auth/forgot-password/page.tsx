@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
   if (isSubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center mb-4">
               <Logo width={140} height={29} priority />
@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button asChild className="w-full">
+            <Button asChild className="w-full rounded-full">
               <Link href="/auth/login">Back to login</Link>
             </Button>
             <div className="text-center">
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <Logo width={140} height={29} priority />
@@ -97,10 +97,11 @@ export default function ForgotPasswordPage() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="rounded-full dark:bg-[#09090B] border-transparent dark:border-white/5"
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
               {isLoading ? "Sending..." : "Send reset link"}
             </Button>
           </form>

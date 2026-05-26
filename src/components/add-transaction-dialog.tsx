@@ -41,6 +41,7 @@ import { apiClient } from "@/lib/api-client"
 import { useOrganizationScope } from "@/hooks/use-organization-scope"
 import posthog from "posthog-js"
 import { TagInput } from "./tag-input"
+import { numberToWords } from "@/lib/number-to-words"
 
 const COLORS = [
   "#EF4444", "#F97316", "#F59E0B", "#84CC16", "#10B981",
@@ -352,19 +353,37 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{transactionToEdit ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-2xl font-semibold tracking-tight">{transactionToEdit ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
+          <DialogDescription className="text-zinc-500 dark:text-zinc-400">
             {transactionToEdit ? "Modify the details of your transaction." : "Record a new expense, income, or transfer."}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => !transactionToEdit && setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="EXPENSE" disabled={!!transactionToEdit}>EXPENSE</TabsTrigger>
-            <TabsTrigger value="INCOME" disabled={!!transactionToEdit}>INCOME</TabsTrigger>
-            <TabsTrigger value="TRANSFER" disabled={!!transactionToEdit}>TRANSFER</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 rounded-full bg-zinc-100 dark:bg-white/5 p-1">
+            <TabsTrigger 
+              className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm" 
+              value="EXPENSE" 
+              disabled={!!transactionToEdit}
+            >
+              EXPENSE
+            </TabsTrigger>
+            <TabsTrigger 
+              className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm" 
+              value="INCOME" 
+              disabled={!!transactionToEdit}
+            >
+              INCOME
+            </TabsTrigger>
+            <TabsTrigger 
+              className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm" 
+              value="TRANSFER" 
+              disabled={!!transactionToEdit}
+            >
+              TRANSFER
+            </TabsTrigger>
           </TabsList>
 
           {/* Note: We disable tab switching in edit mode for simplicity to avoid complex form reset logic 
@@ -373,28 +392,33 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                For now disabled to ensure stability. */}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
 
               {/* Common Fields: Amount, Fee */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="amount"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-medium">{baseCurrency}</span>
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Amount</FormLabel>
+                      <div className="flex items-center gap-2 border dark:border-white/10 dark:bg-[#121214] rounded-2xl px-4 py-1 focus-within:ring-1 focus-within:ring-white/20 transition-all">
+                        <span className="text-xl font-medium text-zinc-400">{baseCurrency}</span>
                         <FormControl>
                           <Input
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="text-2xl font-bold"
+                            className="text-2xl font-light border-none shadow-none focus-visible:ring-0 px-0 dark:bg-transparent h-10"
                             {...field}
                           />
                         </FormControl>
                       </div>
+                      {field.value && !isNaN(Number(field.value)) && Number(field.value) > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1 animate-in fade-in slide-in-from-top-1 duration-300 ml-1">
+                          {numberToWords(Number(field.value))}
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -404,20 +428,25 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                   control={form.control}
                   name="feeAmount"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fee (Optional)</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-medium">{baseCurrency}</span>
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Fee (Optional)</FormLabel>
+                      <div className="flex items-center gap-2 border dark:border-white/10 dark:bg-[#121214] rounded-2xl px-4 py-1 focus-within:ring-1 focus-within:ring-white/20 transition-all">
+                        <span className="text-xl font-medium text-zinc-400">{baseCurrency}</span>
                         <FormControl>
                           <Input
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="text-2xl font-bold"
+                            className="text-2xl font-light border-none shadow-none focus-visible:ring-0 px-0 dark:bg-transparent h-10"
                             {...field}
                           />
                         </FormControl>
                       </div>
+                      {field.value && !isNaN(Number(field.value)) && Number(field.value) > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1 animate-in fade-in slide-in-from-top-1 duration-300 ml-1">
+                          {numberToWords(Number(field.value))}
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -430,23 +459,26 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                   control={form.control}
                   name="categoryId"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Category</FormLabel>
                       <FormControl>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                           {(activeTab === "EXPENSE" ? expenseCategories : incomeCategories).map((cat: any) => (
                             <div
                               key={cat.id}
                               onClick={() => field.onChange(cat.id)}
                               className={cn(
-                                "cursor-pointer border rounded-md p-2 flex flex-col items-center justify-center gap-1 transition-all hover:bg-muted text-center text-xs",
-                                field.value === cat.id ? "ring-2 ring-primary bg-muted" : "bg-card"
+                                "cursor-pointer rounded-full p-2 flex items-center justify-center transition-all text-center text-xs border h-9",
+                                field.value === cat.id 
+                                  ? "border-transparent font-semibold scale-[1.03]" 
+                                  : "font-medium hover:opacity-80"
                               )}
+                              style={{
+                                borderColor: cat.color,
+                                backgroundColor: field.value === cat.id ? cat.color : `${cat.color}15`,
+                                color: field.value === cat.id ? "#ffffff" : cat.color
+                              }}
                             >
-                              <div
-                                className="h-6 w-6 rounded-full"
-                                style={{ backgroundColor: cat.color }}
-                              />
                               <span className="truncate w-full">{cat.name}</span>
                             </div>
                           ))}
@@ -463,23 +495,26 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                 />
               )}
 
-              {/* Account Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Account and Date Selection */}
+              <div className={cn(
+                "grid grid-cols-1 gap-4",
+                activeTab === "TRANSFER" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+              )}>
                 <FormField
                   control={form.control}
                   name="accountId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{activeTab === "TRANSFER" ? "From Account" : "Account"}</FormLabel>
+                      <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{activeTab === "TRANSFER" ? "From Account" : "Account"}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10">
                             <SelectValue placeholder="Select account" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl dark:bg-[#121214] dark:border-white/10">
                           {accounts.map((acc: any) => (
-                            <SelectItem key={acc.id} value={acc.id}>
+                            <SelectItem key={acc.id} value={acc.id} className="rounded-lg">
                               {acc.name} ({baseCurrency} {parseFloat(acc.currentBalance).toFixed(2)})
                             </SelectItem>
                           ))}
@@ -496,16 +531,16 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     name="toAccountId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>To Account</FormLabel>
+                        <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">To Account</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="rounded-xl dark:bg-[#121214] dark:border-white/5 h-12">
                               <SelectValue placeholder="Select destination" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl dark:bg-[#121214] dark:border-white/10">
                             {accounts.map((acc: any) => (
-                              <SelectItem key={acc.id} value={acc.id} disabled={acc.id === form.getValues("accountId")}>
+                              <SelectItem key={acc.id} value={acc.id} disabled={acc.id === form.getValues("accountId")} className="rounded-lg">
                                 {acc.name}
                               </SelectItem>
                             ))}
@@ -516,43 +551,43 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     )}
                   />
                 )}
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 w-full relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer pl-4 pr-10" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
 
-                {activeTab === "EXPENSE" && (
+              {activeTab === "EXPENSE" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="payeeId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Payee (Optional)</FormLabel>
+                        <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Payee (Optional)</FormLabel>
                         <Select
                           onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
                           value={field.value || undefined}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10">
                               <SelectValue placeholder="Select payee (optional)" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="__none__">None</SelectItem>
+                          <SelectContent className="rounded-xl dark:bg-[#121214] dark:border-white/10">
+                            <SelectItem value="__none__" className="rounded-lg">None</SelectItem>
                             {payees.filter((p: any) => !p.isArchived).map((payee: any) => (
-                              <SelectItem key={payee.id} value={payee.id}>
+                              <SelectItem key={payee.id} value={payee.id} className="rounded-lg">
                                 {payee.name}
                               </SelectItem>
                             ))}
@@ -562,38 +597,36 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                       </FormItem>
                     )}
                   />
-                )}
-              </div>
 
-              {activeTab === "EXPENSE" && (
-                <FormField
-                  control={form.control}
-                  name="subscriptionId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subscription (Optional)</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
-                        value={field.value || undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subscription (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">None</SelectItem>
-                          {subscriptions.map((sub: any) => (
-                            <SelectItem key={sub.id} value={sub.id}>
-                              {sub.title} ({baseCurrency} {parseFloat(sub.amount).toFixed(2)})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="subscriptionId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Subscription (Optional)</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
+                          value={field.value || undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10">
+                              <SelectValue placeholder="Select subscription (optional)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="rounded-xl dark:bg-[#121214] dark:border-white/10">
+                            <SelectItem value="__none__" className="rounded-lg">None</SelectItem>
+                            {subscriptions.map((sub: any) => (
+                              <SelectItem key={sub.id} value={sub.id} className="rounded-lg">
+                                {sub.title} ({baseCurrency} {parseFloat(sub.amount).toFixed(2)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               )}
 
               <FormField
@@ -601,9 +634,9 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Description (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Add a note..." {...field} />
+                      <Input placeholder="Add a note..." {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -615,28 +648,30 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                 name="tagIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tags (Optional)</FormLabel>
+                    <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags (Optional)</FormLabel>
                     <FormControl>
-                      <TagInput
-                        value={field.value || []}
-                        onChange={field.onChange}
-                        options={tags}
-                        onCreate={async (name) => {
-                          const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-                          await createTagMutation.mutateAsync({ name, color: randomColor });
-                        }}
-                      />
+                      <div className="w-full">
+                        <TagInput
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          options={tags}
+                          onCreate={async (name) => {
+                            const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                            await createTagMutation.mutateAsync({ name, color: randomColor });
+                          }}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <DialogFooter className="mt-8 pt-4 border-t dark:border-white/5">
+                <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-xl hover:dark:bg-white/5">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" disabled={isPending} className="rounded-xl dark:bg-white dark:text-black dark:hover:bg-white/90 font-medium px-6">
                   {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {transactionToEdit ? "Update Transaction" : "Save Transaction"}
                 </Button>

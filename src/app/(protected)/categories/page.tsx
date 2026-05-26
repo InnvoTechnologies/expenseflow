@@ -244,12 +244,13 @@ function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Categories</h1>
-          <p className="text-muted-foreground">Manage your expense and income categories</p>
+          <h1 className="text-3xl font-medium tracking-tight">Categories</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage your expense and income categories</p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
+            className="rounded-full"
             onClick={() => {
               if (confirm("This will create 24 default categories (12 expense + 12 income). Continue?")) {
                 bulkCreateMutation.mutate()
@@ -269,7 +270,7 @@ function CategoriesPage() {
               </>
             )}
           </Button>
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreate} className="rounded-full">
             <Plus className="mr-2 h-4 w-4" />
             Add Category
           </Button>
@@ -280,10 +281,10 @@ function CategoriesPage() {
         setIsDialogOpen(open)
         if (!open) setEditingCategory(null)
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
           <DialogHeader>
-            <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-semibold tracking-tight">{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
               {editingCategory ? "Make changes to your category details here." : "Add a new category to organize your transactions."}
             </DialogDescription>
           </DialogHeader>
@@ -296,7 +297,7 @@ function CategoriesPage() {
                   <FormItem>
                     <FormLabel>Category Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Groceries" {...field} />
+                      <Input placeholder="e.g. Groceries" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -310,11 +311,11 @@ function CategoriesPage() {
                     <FormLabel>Type</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                         <SelectItem value="EXPENSE">Expense</SelectItem>
                         <SelectItem value="INCOME">Income</SelectItem>
                       </SelectContent>
@@ -350,9 +351,9 @@ function CategoriesPage() {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+              <DialogFooter className="pt-4 mt-2 border-t dark:border-white/5">
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-full hover:dark:bg-white/5">Cancel</Button>
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
                   {createMutation.isPending || updateMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -368,20 +369,20 @@ function CategoriesPage() {
         </DialogContent>
       </Dialog>
 
-      <Card>
+      <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
         <CardContent className="p-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="EXPENSE">EXPENSE</TabsTrigger>
-              <TabsTrigger value="INCOME">INCOME</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 rounded-full bg-zinc-100 dark:bg-white/5 p-1 h-12">
+              <TabsTrigger value="EXPENSE" className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm">EXPENSE</TabsTrigger>
+              <TabsTrigger value="INCOME" className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm">INCOME</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="space-y-4 mt-6">
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 border rounded-lg animate-pulse">
-                    <div className="h-6 w-1/3 bg-muted rounded" />
-                    <div className="h-8 w-8 bg-muted rounded" />
+                  <div key={i} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 animate-pulse">
+                    <div className="h-6 w-1/3 bg-muted rounded-full" />
+                    <div className="h-8 w-8 bg-muted rounded-full" />
                   </div>
                 ))
               ) : filteredCategories.length === 0 ? (
@@ -391,7 +392,7 @@ function CategoriesPage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredCategories.map((category) => (
-                    <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/50 transition-colors group">
+                    <div key={category.id} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 hover:dark:bg-white/5 transition-all group">
                       <div className="flex items-center gap-3">
                         <div
                           className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
@@ -399,7 +400,7 @@ function CategoriesPage() {
                         >
                           {category.name.substring(0, 1).toUpperCase()}
                         </div>
-                        <span className="font-medium">{category.name}</span>
+                        <span className="font-medium text-sm">{category.name}</span>
                       </div>
                       <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(category)}>

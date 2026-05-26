@@ -144,10 +144,10 @@ export function AddPayeeDialog({
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
                 <DialogHeader>
-                    <DialogTitle>{payeeToEdit ? "Edit Payee" : "Add Payee"}</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-2xl font-semibold tracking-tight">{payeeToEdit ? "Edit Payee" : "Add Payee"}</DialogTitle>
+                    <DialogDescription className="text-zinc-500 dark:text-zinc-400">
                         {payeeToEdit
                             ? "Update payee details"
                             : "Add a person or entity you make payments to"}
@@ -162,7 +162,7 @@ export function AddPayeeDialog({
                                 <FormItem>
                                     <FormLabel>Name</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="John Doe or Acme Inc." {...field} />
+                                        <Input placeholder="John Doe or Acme Inc." {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -176,7 +176,7 @@ export function AddPayeeDialog({
                                     <FormItem>
                                         <FormLabel>Email (Optional)</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="john@example.com" {...field} />
+                                            <Input placeholder="john@example.com" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -189,7 +189,7 @@ export function AddPayeeDialog({
                                     <FormItem>
                                         <FormLabel>Phone (Optional)</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="+123456789" {...field} />
+                                            <Input placeholder="+123456789" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -203,7 +203,7 @@ export function AddPayeeDialog({
                                 <FormItem>
                                     <FormLabel>Address (Optional)</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="123 Main St, City" {...field} />
+                                        <Input placeholder="123 Main St, City" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -218,6 +218,7 @@ export function AddPayeeDialog({
                                     <FormControl>
                                         <Textarea
                                             placeholder="Additional notes about this payee"
+                                            className="rounded-2xl bg-zinc-100/50 dark:bg-white/5 border-transparent px-4 py-3"
                                             {...field}
                                         />
                                     </FormControl>
@@ -231,7 +232,7 @@ export function AddPayeeDialog({
                                 control={form.control}
                                 name="isArchived"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <FormItem className="flex flex-row items-center justify-between rounded-[20px] dark:bg-[#121214] dark:border-white/5 border p-4">
                                         <div className="space-y-0.5">
                                             <FormLabel className="text-base">Archive Payee</FormLabel>
                                             <FormDescription>
@@ -248,11 +249,11 @@ export function AddPayeeDialog({
                                 )}
                             />
                         )}
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                        <DialogFooter className="pt-4 mt-2 border-t dark:border-white/5">
+                            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-full hover:dark:bg-white/5">
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isPending}>
+                            <Button type="submit" disabled={isPending} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
                                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {payeeToEdit ? "Update Payee" : "Create Payee"}
                             </Button>

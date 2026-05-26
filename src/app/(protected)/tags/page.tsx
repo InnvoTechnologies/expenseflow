@@ -146,8 +146,8 @@ export default function TagsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">Tags</h1>
-                    <p className="text-muted-foreground">Manage your transaction tags</p>
+                    <h1 className="text-3xl font-medium tracking-tight">Tags</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage your transaction tags</p>
                 </div>
                 <Dialog open={isCreateOpen || !!editingTag} onOpenChange={(open) => {
                     if (!open) {
@@ -159,14 +159,14 @@ export default function TagsPage() {
                     }
                 }}>
                     <DialogTrigger asChild>
-                        <Button onClick={() => setIsCreateOpen(true)}>
+                        <Button onClick={() => setIsCreateOpen(true)} className="rounded-full">
                             <Plus className="mr-2 h-4 w-4" /> Add Tag
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
                         <DialogHeader>
-                            <DialogTitle>{editingTag ? "Edit Tag" : "Create Tag"}</DialogTitle>
-                            <DialogDescription>
+                            <DialogTitle className="text-2xl font-semibold tracking-tight">{editingTag ? "Edit Tag" : "Create Tag"}</DialogTitle>
+                            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
                                 {editingTag ? "Update the tag details." : "Add a new tag to organize your transactions."}
                             </DialogDescription>
                         </DialogHeader>
@@ -179,7 +179,7 @@ export default function TagsPage() {
                                         <FormItem>
                                             <FormLabel>Name</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="e.g. Travel, Urgent" {...field} />
+                                                <Input placeholder="e.g. Travel, Urgent" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -200,7 +200,7 @@ export default function TagsPage() {
                                                             <Input
                                                                 placeholder="#000000"
                                                                 {...field}
-                                                                className="pl-10"
+                                                                className="pl-10 rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4"
                                                             />
                                                             <div
                                                                 className="absolute left-3 top-2.5 h-5 w-5 rounded-full border shadow-sm"
@@ -211,7 +211,7 @@ export default function TagsPage() {
                                                             type="color"
                                                             value={field.value}
                                                             onChange={(e) => field.onChange(e.target.value)}
-                                                            className="h-10 w-14 cursor-pointer p-1 bg-transparent border rounded-md"
+                                                            className="h-10 w-14 cursor-pointer p-1 bg-transparent border dark:border-white/10 rounded-full"
                                                         />
                                                     </div>
 
@@ -237,14 +237,14 @@ export default function TagsPage() {
                                     )}
                                 />
 
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => {
+                                <DialogFooter className="pt-4 mt-2 border-t dark:border-white/5">
+                                    <Button type="button" variant="ghost" className="rounded-full hover:dark:bg-white/5" onClick={() => {
                                         setIsCreateOpen(false)
                                         setEditingTag(null)
                                     }}>
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={isPending}>
+                                    <Button type="submit" disabled={isPending} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
                                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         {editingTag ? "Update" : "Create"}
                                     </Button>
@@ -255,14 +255,14 @@ export default function TagsPage() {
                 </Dialog>
             </div>
 
-            <Card>
+            <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
                 <CardContent className="p-6">
                     {isLoading ? (
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 border rounded-lg animate-pulse">
-                                    <div className="h-6 w-1/3 bg-muted rounded" />
-                                    <div className="h-8 w-8 bg-muted rounded" />
+                                <div key={i} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 animate-pulse">
+                                    <div className="h-6 w-1/3 bg-muted rounded-full" />
+                                    <div className="h-8 w-8 bg-muted rounded-full" />
                                 </div>
                             ))}
                         </div>
@@ -274,7 +274,7 @@ export default function TagsPage() {
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {tags.map((tag: any) => (
-                                <div key={tag.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/50 transition-colors group">
+                                <div key={tag.id} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 hover:dark:bg-white/5 transition-all group">
                                     <div className="flex items-center gap-3">
                                         <div
                                             className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
@@ -282,7 +282,7 @@ export default function TagsPage() {
                                         >
                                             <TagIcon className="h-4 w-4 text-white" />
                                         </div>
-                                        <span className="font-medium">{tag.name}</span>
+                                        <span className="font-medium text-sm">{tag.name}</span>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(tag)}>

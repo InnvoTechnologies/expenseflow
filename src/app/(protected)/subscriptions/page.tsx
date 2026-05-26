@@ -166,11 +166,11 @@ function SubscriptionsTrackingPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">Subscription Tracking</h1>
-                    <p className="text-muted-foreground">Manage your recurring payments and subscriptions</p>
+                    <h1 className="text-3xl font-medium tracking-tight">Subscription Tracking</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage your recurring payments and subscriptions</p>
                 </div>
                 <AddSubscriptionDialog>
-                    <Button>
+                    <Button className="rounded-full">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Subscription
                     </Button>
@@ -179,15 +179,15 @@ function SubscriptionsTrackingPage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                             Active Subscriptions
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{activeSubscriptions.length}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <div className="text-4xl font-light tracking-tight mt-2">{activeSubscriptions.length}</div>
+                        <p className="text-[10px] text-zinc-600 capitalize mt-2">
                             {subscriptions.length - activeSubscriptions.length > 0 && 
                                 `${subscriptions.length - activeSubscriptions.length} inactive`
                             }
@@ -195,27 +195,27 @@ function SubscriptionsTrackingPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                             Monthly Cost
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatAmount(calculateTotalMonthly())}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Estimated average</p>
+                        <div className="text-4xl font-light tracking-tight mt-2">{formatAmount(calculateTotalMonthly())}</div>
+                        <p className="text-[10px] text-zinc-600 capitalize mt-2">Estimated average</p>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                             Yearly Cost
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatAmount(calculateTotalYearly())}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Estimated total</p>
+                        <div className="text-4xl font-light tracking-tight mt-2">{formatAmount(calculateTotalYearly())}</div>
+                        <p className="text-[10px] text-zinc-600 capitalize mt-2">Estimated total</p>
                     </CardContent>
                 </Card>
             </div>
@@ -228,7 +228,7 @@ function SubscriptionsTrackingPage() {
                     </CardContent>
                 </Card>
             ) : subscriptionsWithDetails.length === 0 ? (
-                <Card className="border-dashed">
+                <Card className="border-dashed dark:border-white/10 dark:bg-transparent shadow-none rounded-[24px]">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold mb-2">No subscriptions yet</h3>
@@ -236,7 +236,7 @@ function SubscriptionsTrackingPage() {
                             Start tracking your recurring payments and never miss a renewal
                         </p>
                         <AddSubscriptionDialog>
-                            <Button>
+                            <Button className="rounded-full">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Subscription
                             </Button>
@@ -248,7 +248,7 @@ function SubscriptionsTrackingPage() {
                     {subscriptionsWithDetails.map((subscription) => {
                         const nextBillingDate = calculateNextBillingDate(subscription.startDate, subscription.billingCycle)
                         return (
-                        <Card key={subscription.id}>
+                        <Card key={subscription.id} className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] hover:dark:bg-white/5 transition-all group">
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
@@ -306,16 +306,16 @@ function SubscriptionsTrackingPage() {
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <Button
-                                            size="sm"
+                                            className="h-8 w-8 p-0 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10"
                                             variant="ghost"
                                             onClick={() => handleEdit(subscription)}
                                         >
-                                            <Pencil className="h-4 w-4" />
+                                            <Pencil className="h-4 w-4 text-zinc-500" />
                                         </Button>
                                         <Button
-                                            size="sm"
+                                            className="h-8 w-8 p-0 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10 hover:text-red-500 dark:hover:text-red-400"
                                             variant="ghost"
                                             onClick={() => handleDelete(subscription.id)}
                                         >

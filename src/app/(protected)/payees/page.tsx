@@ -104,11 +104,11 @@ function PayeesPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">Payees</h1>
-                    <p className="text-muted-foreground">Manage people and entities you send payments to</p>
+                    <h1 className="text-3xl font-medium tracking-tight">Payees</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage people and entities you send payments to</p>
                 </div>
                 <AddPayeeDialog>
-                    <Button>
+                    <Button className="rounded-full">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Payee
                     </Button>
@@ -117,15 +117,15 @@ function PayeesPage() {
 
             <Tabs defaultValue="active" className="w-full">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                    <TabsList className="mb-0">
-                        <TabsTrigger value="active">Active ({activePayees.length})</TabsTrigger>
-                        <TabsTrigger value="archived">Archived ({archivedPayees.length})</TabsTrigger>
+                    <TabsList className="mb-0 rounded-full p-1 h-auto">
+                        <TabsTrigger value="active" className="rounded-full py-2">Active ({activePayees.length})</TabsTrigger>
+                        <TabsTrigger value="archived" className="rounded-full py-2">Archived ({archivedPayees.length})</TabsTrigger>
                     </TabsList>
                     <div className="relative w-full sm:w-72">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Search payees..."
-                            className="pl-10"
+                            className="pl-10 rounded-full dark:bg-[#121214] border-transparent dark:border-white/5"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -214,8 +214,8 @@ function LoadingState() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
-                    <CardHeader className="h-32 bg-muted" />
+                <Card key={i} className="animate-pulse border-none shadow-none dark:bg-[#121214] rounded-[24px]">
+                    <CardHeader className="h-32 bg-muted rounded-t-[24px]" />
                 </Card>
             ))}
         </div>
@@ -224,14 +224,14 @@ function LoadingState() {
 
 function EmptyState({ searchQuery, title, description, hideAdd = false }: any) {
     return (
-        <Card className="border-dashed">
+        <Card className="border-dashed dark:border-white/10 dark:bg-transparent shadow-none rounded-[24px]">
             <CardContent className="flex flex-col items-center justify-center py-12">
-                <User className="h-12 w-12 text-muted-foreground mb-4" />
+                <User className="h-12 w-12 text-zinc-500 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">{title}</h3>
                 <p className="text-muted-foreground text-center mb-6">{description}</p>
                 {!searchQuery && !hideAdd && (
                     <AddPayeeDialog>
-                        <Button>
+                        <Button className="rounded-full">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Payee
                         </Button>
@@ -246,7 +246,7 @@ function PayeeGrid({ payees, onEdit, onDelete, onArchive }: any) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {payees.map((payee: any) => (
-                <Card key={payee.id} className="group hover:border-primary/50 transition-colors">
+                <Card key={payee.id} className="group border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] transition-all hover:dark:bg-white/5">
                     <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
@@ -268,16 +268,16 @@ function PayeeGrid({ payees, onEdit, onDelete, onArchive }: any) {
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <MoreVertical className="h-4 w-4" />
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10">
+                                        <MoreVertical className="h-4 w-4 text-zinc-500" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => onEdit(payee)}>
+                                <DropdownMenuContent align="end" className="rounded-xl border-transparent dark:border-white/5 shadow-2xl">
+                                    <DropdownMenuItem onClick={() => onEdit(payee)} className="rounded-lg cursor-pointer">
                                         <Pencil className="h-4 w-4 mr-2" />
                                         Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onArchive(payee.id, !payee.isArchived)}>
+                                    <DropdownMenuItem onClick={() => onArchive(payee.id, !payee.isArchived)} className="rounded-lg cursor-pointer">
                                         {payee.isArchived ? (
                                             <>
                                                 <ArchiveRestore className="h-4 w-4 mr-2" />
@@ -291,7 +291,7 @@ function PayeeGrid({ payees, onEdit, onDelete, onArchive }: any) {
                                         )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        className="text-destructive focus:text-destructive"
+                                        className="text-red-500 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30 rounded-lg cursor-pointer"
                                         onClick={() => onDelete(payee)}
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />

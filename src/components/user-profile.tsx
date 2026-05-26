@@ -88,109 +88,119 @@ export default function UserProfile() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full justify-start p-2 h-auto">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
+          <Button variant="ghost" className="w-full justify-start p-1.5 h-auto rounded-full hover:bg-zinc-200 dark:hover:bg-white/10">
+            <div className="flex items-center gap-2 w-full">
+              <Avatar className="h-8 w-8 shrink-0">
                 <AvatarImage
                   src={user.image || undefined}
                   alt="User avatar"
                   referrerPolicy="no-referrer"
                   className="object-cover"
                 />
-                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                <AvatarFallback className="text-xs">{getInitials(user.name)}</AvatarFallback>
               </Avatar>
 
-              <div className="text-left flex-1">
-                <p className="text-sm font-medium leading-none">{user.name}</p>
-                <p className="text-xs text-muted-foreground leading-none mt-1">{user.email}</p>
-                {activeOrganization && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Building2 className="h-3 w-3 text-orange-500" />
-                    <span className="text-xs text-orange-600 dark:text-orange-400">
-                      {activeOrganization.name}
-                    </span>
-                  </div>
-                )}
+              <div className="text-left flex-1 overflow-hidden">
+                <div className="flex items-center gap-1">
+                  <p className="text-sm font-medium leading-none truncate">{user.name}</p>
+                  {activeOrganization && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-orange-500 shrink-0" />
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-500 leading-none mt-1.5 truncate">
+                  {activeOrganization ? activeOrganization.name : "Personal Account"}
+                </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-zinc-500 shrink-0" />
             </div>
           </Button>
         </DropdownMenuTrigger>
         
-        <DropdownMenuContent align="end" side="top" className="w-64 mb-2">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" side="top" className="w-64 mb-2 p-2 rounded-[24px] dark:bg-[#121214] border-transparent dark:border-white/5 shadow-xl">
+          <div className="px-3 py-2 mb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">My Account</p>
+          </div>
           
-          {/* Personal Account */}
-          <DropdownMenuItem 
-            onClick={() => handleSetActiveOrg(null)}
-            className={!activeOrganization ? "bg-accent" : ""}
-          >
-            <User className="mr-2 h-4 w-4 text-blue-600" />
-            <div className="flex-1">
-              <span>Personal Account</span>
-              <p className="text-xs text-muted-foreground">Just you</p>
-            </div>
-          </DropdownMenuItem>
-          
-          {/* Organizations */}
-          {organizations.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
+          <div className="space-y-1">
+            {/* Personal Account */}
+            <DropdownMenuItem 
+              onClick={() => handleSetActiveOrg(null)}
+              className={`rounded-[16px] py-2.5 px-3 cursor-pointer ${!activeOrganization ? "bg-zinc-100 dark:bg-white/5" : ""}`}
+            >
+              <div className="bg-blue-500/10 p-1.5 rounded-full mr-3">
+                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-sm">Personal Account</span>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Just you</p>
+              </div>
+            </DropdownMenuItem>
+            
+            {/* Organizations */}
+            {organizations.length > 0 && (
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Building2 className="mr-2 h-4 w-4 text-orange-600" />
-                  <span>Organizations</span>
+                <DropdownMenuSubTrigger className="rounded-[16px] py-2.5 px-3 cursor-pointer">
+                  <div className="bg-orange-500/10 p-1.5 rounded-full mr-3">
+                    <Building2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span className="font-medium text-sm">Organizations</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-56">
-                  {organizations.map((org) => (
-                    <DropdownMenuItem 
-                      key={org.id}
-                      onClick={() => handleSetActiveOrg(org)}
-                      className={activeOrganization?.id === org.id ? "bg-accent" : ""}
-                    >
-                      <div className="flex-1">
-                        <span className="font-medium">{org.name}</span>
-                        <p className="text-xs text-muted-foreground">@{org.slug}</p>
-                      </div>
+                <DropdownMenuSubContent className="w-56 p-2 rounded-[24px] dark:bg-[#121214] border-transparent dark:border-white/5 shadow-xl">
+                  <div className="space-y-1">
+                    {organizations.map((org) => (
+                      <DropdownMenuItem 
+                        key={org.id}
+                        onClick={() => handleSetActiveOrg(org)}
+                        className={`rounded-[16px] py-2.5 px-3 cursor-pointer ${activeOrganization?.id === org.id ? "bg-zinc-100 dark:bg-white/5" : ""}`}
+                      >
+                        <div className="flex-1">
+                          <span className="font-medium text-sm">{org.name}</span>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">@{org.slug}</p>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                    <div className="h-px bg-border/50 my-2 mx-1" />
+                    <DropdownMenuItem onClick={() => setIsCreateDialogOpen(true)} className="rounded-[16px] py-2.5 px-3 cursor-pointer">
+                      <Plus className="mr-3 h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-sm">Create Organization</span>
                     </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    <span>Create Organization</span>
-                  </DropdownMenuItem>
+                  </div>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-            </>
-          )}
-          
-          {/* Create Organization (if no existing orgs) */}
-          {organizations.length === 0 && (
-            <DropdownMenuItem onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Create Organization</span>
+            )}
+            
+            {/* Create Organization (if no existing orgs) */}
+            {organizations.length === 0 && (
+              <DropdownMenuItem onClick={() => setIsCreateDialogOpen(true)} className="rounded-[16px] py-2.5 px-3 cursor-pointer">
+                <div className="bg-zinc-500/10 p-1.5 rounded-full mr-3">
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="font-medium text-sm">Create Organization</span>
+              </DropdownMenuItem>
+            )}
+
+            <div className="h-px bg-border/50 my-2 mx-1" />
+            
+            <DropdownMenuItem asChild className="rounded-[16px] py-2.5 px-3 cursor-pointer">
+              <Link href="/organizations">
+                <Building2 className="mr-3 h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Manage Organizations</span>
+              </Link>
             </DropdownMenuItem>
-          )}
-          
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/organizations">
-              <Building2 className="mr-2 h-4 w-4" />
-              <span>Manage Organizations</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-[16px] py-2.5 px-3 cursor-pointer">
+              <Link href="/settings">
+                <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            <div className="h-px bg-border/50 my-2 mx-1" />
+            
+            <DropdownMenuItem onClick={logout} className="rounded-[16px] py-2.5 px-3 cursor-pointer text-red-500 focus:bg-red-500/10 focus:text-red-500">
+              <LogOut className="mr-3 h-4 w-4" />
+              <span className="font-medium text-sm">Log out</span>
+            </DropdownMenuItem>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
 

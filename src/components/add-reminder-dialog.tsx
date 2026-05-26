@@ -128,10 +128,10 @@ export function AddReminderDialog({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>{reminderToEdit ? "Edit Reminder" : "Add Reminder"}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-semibold tracking-tight">{reminderToEdit ? "Edit Reminder" : "Add Reminder"}</DialogTitle>
+          <DialogDescription className="text-zinc-500 dark:text-zinc-400">
             {reminderToEdit
               ? "Update your reminder details"
               : "Set up a reminder for bills, budgets, or other important dates"}
@@ -146,7 +146,7 @@ export function AddReminderDialog({
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Pay Electricity Bill" {...field} />
+                    <Input placeholder="Pay Electricity Bill" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -162,6 +162,7 @@ export function AddReminderDialog({
                   <FormControl>
                     <Textarea
                       placeholder="Add additional details..."
+                      className="rounded-2xl bg-zinc-100/50 dark:bg-white/5 border-transparent px-4 py-3"
                       {...field}
                     />
                   </FormControl>
@@ -177,22 +178,23 @@ export function AddReminderDialog({
                 <FormItem>
                   <FormLabel>Due Date & Time</FormLabel>
                   <FormControl>
-                    <Input type="datetime-local" {...field} />
+                    <Input type="datetime-local" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 w-full relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer pl-4 pr-10" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="pt-4 mt-2 border-t dark:border-white/5">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setOpen(false)}
+                className="rounded-full hover:dark:bg-white/5"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {reminderToEdit ? "Update Reminder" : "Create Reminder"}
               </Button>

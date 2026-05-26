@@ -247,10 +247,10 @@ function AccountsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Accounts</h1>
-          <p className="text-muted-foreground">Manage your accounts and balances</p>
+          <h1 className="text-3xl font-medium tracking-tight">Accounts</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage your accounts and balances</p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="rounded-full">
           <Plus className="mr-2 h-4 w-4" />
           Add Account
         </Button>
@@ -260,10 +260,10 @@ function AccountsPage() {
         setIsDialogOpen(open)
         if (!open) setEditingAccount(null)
       }}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto sm:rounded-[24px] dark:bg-[#09090B] dark:border-white/5 shadow-2xl p-6 sm:p-8">
           <DialogHeader>
-            <DialogTitle>{editingAccount ? "Edit Account" : "Add Account"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-semibold tracking-tight">{editingAccount ? "Edit Account" : "Add Account"}</DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
               {editingAccount ? "Make changes to your account details here." : "Add a new financial account to track your balance."}
             </DialogDescription>
           </DialogHeader>
@@ -276,7 +276,7 @@ function AccountsPage() {
                   <FormItem>
                     <FormLabel>Account Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Chase Checking" {...field} />
+                      <Input placeholder="e.g. Chase Checking" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -290,11 +290,11 @@ function AccountsPage() {
                     <FormLabel>Type</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                           <SelectValue placeholder="Select account type" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="rounded-2xl dark:bg-[#121214] dark:border-white/10">
                         <SelectItem value="BANK">Bank Account</SelectItem>
                         <SelectItem value="CASH">Cash</SelectItem>
                         <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
@@ -314,11 +314,11 @@ function AccountsPage() {
                       <FormLabel>Currency</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="max-h-[300px]">
+                        <SelectContent className="max-h-[300px] rounded-2xl dark:bg-[#121214] dark:border-white/10">
                           {currencyList.map((currency) => (
                             <SelectItem key={currency.code} value={currency.code}>
                               {currency.code} - {currency.name}
@@ -337,7 +337,7 @@ function AccountsPage() {
                     <FormItem>
                       <FormLabel>Current Balance</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input type="number" step="0.01" {...field} className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -348,7 +348,7 @@ function AccountsPage() {
                 control={form.control}
                 name="isDefault"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[20px] dark:bg-[#121214] dark:border-white/5 border p-4">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -366,9 +366,9 @@ function AccountsPage() {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+              <DialogFooter className="pt-4 mt-2 border-t dark:border-white/5">
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-full hover:dark:bg-white/5">Cancel</Button>
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="rounded-full dark:bg-white dark:text-black dark:hover:bg-white/90">
                   {createMutation.isPending || updateMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -399,39 +399,47 @@ function AccountsPage() {
             </Card>
           ))
         ) : accounts?.length === 0 ? (
-          <div className="col-span-full text-center p-8 border border-dashed rounded-lg">
-            <p className="text-muted-foreground">No accounts found. Create one to get started.</p>
-            <Button variant="outline" className="mt-4" onClick={handleCreate}>
+          <div className="col-span-full flex flex-col items-center justify-center py-12 dark:bg-[#121214] rounded-[24px]">
+            <Wallet className="h-8 w-8 text-zinc-500 mb-3" />
+            <p className="text-sm text-zinc-500">No accounts found. Create one to get started.</p>
+            <Button variant="outline" className="mt-4 rounded-full" onClick={handleCreate}>
               Create Account
             </Button>
           </div>
         ) : (
           accounts?.map((account) => (
-            <Card key={account.id}>
+            <Card key={account.id} className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                <div className="flex items-center gap-2">
-                  {getIcon(account.type)}
-                  <CardTitle className="text-base font-semibold">
-                    {account.name}
-                    {account.isDefault && (
-                      <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">Default</span>
-                    )}
-                  </CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-zinc-200 dark:bg-white/10 shrink-0 text-zinc-500 dark:text-zinc-400">
+                    {getIcon(account.type)}
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-medium uppercase tracking-wider text-zinc-500">
+                      {account.name}
+                    </CardTitle>
+                    <p className="text-[10px] text-zinc-600 capitalize mt-1">
+                      {account.type.replace('_', ' ').toLowerCase()}
+                      {account.isDefault && (
+                        <span className="ml-2 text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm uppercase tracking-widest">Default</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
+                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10">
                       <span className="sr-only">Open menu</span>
-                      <MoreVertical className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4 text-zinc-500" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(account)}>
+                  <DropdownMenuContent align="end" className="rounded-xl border-transparent dark:border-white/5 shadow-2xl">
+                    <DropdownMenuItem onClick={() => handleEdit(account)} className="rounded-lg cursor-pointer">
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
+                      className="text-red-500 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30 rounded-lg cursor-pointer"
                       onClick={() => deleteMutation.mutate(account.id)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -441,8 +449,7 @@ function AccountsPage() {
                 </DropdownMenu>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatAmount(parseFloat(account.currentBalance), account.currency)}</div>
-                <p className="text-sm text-muted-foreground capitalize">{account.type.replace('_', ' ').toLowerCase()}</p>
+                <div className="text-4xl font-light tracking-tight mt-2">{formatAmount(parseFloat(account.currentBalance), account.currency)}</div>
               </CardContent>
             </Card>
           ))

@@ -171,7 +171,7 @@ export default function RegisterPage() {
         defer 
         onLoad={() => setIsTurnstileLoaded(true)}
       />
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <Logo width={200} priority />
@@ -183,7 +183,7 @@ export default function RegisterPage() {
           <Button
             type="button"
             variant="outline"
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2 rounded-full"
             onClick={async () => {
               setIsLoading(true);
               try {
@@ -244,6 +244,7 @@ export default function RegisterPage() {
                 placeholder="John Doe"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
+                className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
                 required
               />
             </div>
@@ -255,6 +256,7 @@ export default function RegisterPage() {
                 placeholder="john@example.com"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
+                className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent"
                 required
               />
             </div>
@@ -267,13 +269,14 @@ export default function RegisterPage() {
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
+                  className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent pr-10"
                   required
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-full"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -302,7 +305,7 @@ export default function RegisterPage() {
                 </Link>
               </Label>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
               {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>

@@ -83,7 +83,7 @@ export function TagInput({ value = [], onChange, options = [], onCreate, disable
                         variant="outline"
                         role="combobox"
                         aria-expanded={open}
-                        className="w-full justify-between"
+                        className="w-full justify-between rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4"
                         disabled={disabled}
                     >
                         {selectedTags.length > 0
@@ -92,12 +92,13 @@ export function TagInput({ value = [], onChange, options = [], onCreate, disable
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
+                <PopoverContent className="w-full p-2 rounded-[24px] dark:bg-[#121214] border-none shadow-2xl" align="start">
                     <Command>
                         <CommandInput
                             placeholder="Search tags..."
                             value={inputValue}
                             onValueChange={setInputValue}
+                            className="rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-4 mb-2"
                         />
                         <CommandList>
                             <CommandEmpty>
