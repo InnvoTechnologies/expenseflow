@@ -10,6 +10,7 @@ import { Send, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
 import { Badge } from "@/components/ui/badge";
+import { apiClient } from "@/lib/api-client";
 
 interface Message {
     role: "user" | "assistant";
@@ -42,22 +43,16 @@ export default function AIAssistantPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    messages: [
-                        ...messages,
-                        ...(messageText ? [{ role: "user", content: messageText }] : []),
-                    ],
-                    toolCallId,
-                    toolResult,
-                }),
+            const response = await apiClient.post("/chat", {
+                messages: [
+                    ...messages,
+                    ...(messageText ? [{ role: "user", content: messageText }] : []),
+                ],
+                toolCallId,
+                toolResult,
             });
 
-            const data = await response.json();
+            const data = response.data;
 
             if (data.error) {
                 toast.error(data.error);
@@ -151,22 +146,16 @@ export default function AIAssistantPage() {
         });
 
         try {
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
+            const response = await apiClient.post("/chat", {
+                messages,
+                toolCallId: pendingToolCall.id,
+                toolResult: {
+                    toolName: pendingToolCall.name,
+                    params: pendingToolCall.params,
                 },
-                body: JSON.stringify({
-                    messages,
-                    toolCallId: pendingToolCall.id,
-                    toolResult: {
-                        toolName: pendingToolCall.name,
-                        params: pendingToolCall.params,
-                    },
-                }),
             });
 
-            const data = await response.json();
+            const data = response.data;
 
             if (data.error) {
                 toast.error(data.error);

@@ -77,7 +77,7 @@ export function TagInput({ value = [], onChange, options = [], onCreate, disable
                     </Badge>
                 ))}
             </div>
-            <Popover open={open} onOpenChange={setOpen}>
+            <Popover open={open} onOpenChange={setOpen} modal={true}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
 import { payee } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { z } from "zod";
 
 const createPayeeSchema = z.object({
@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
             .select()
             .from(payee)
             .where(whereClause)
-            .orderBy(desc(payee.createdAt));
+            .orderBy(asc(payee.name));
 
         return NextResponse.json(payees);
     } catch (error) {

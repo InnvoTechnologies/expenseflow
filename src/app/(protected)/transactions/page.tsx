@@ -15,6 +15,7 @@ import { apiClient } from "@/lib/api-client"
 import posthog from "posthog-js"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 function TransactionsPage() {
   const { formatAmount: formatCurrency } = useCurrency()
@@ -109,14 +110,6 @@ function TransactionsPage() {
     return `${sign}${formatted}`
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -132,69 +125,29 @@ function TransactionsPage() {
         </TransactionDialog>
       </div>
 
-      {/* Filters */}
-      <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={type === "ALL" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full"
-                onClick={() => { setType("ALL"); setPage(1); }}
-              >
-                All
-              </Button>
-              <Button
-                variant={type === "EXPENSE" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full"
-                onClick={() => { setType("EXPENSE"); setPage(1); }}
-              >
-                Expense
-              </Button>
-              <Button
-                variant={type === "INCOME" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full"
-                onClick={() => { setType("INCOME"); setPage(1); }}
-              >
-                Income
-              </Button>
-              <Button
-                variant={type === "TRANSFER" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full"
-                onClick={() => { setType("TRANSFER"); setPage(1); }}
-              >
-                Transfer
-              </Button>
-            </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search transactions..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 rounded-full dark:bg-black border-transparent dark:border-white/5"
-              />
-            </div>
+      <Tabs value={type} onValueChange={(v) => { setType(v as any); setPage(1); }} className="w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <TabsList className="mb-0 rounded-full p-1 h-auto">
+            <TabsTrigger value="ALL" className="rounded-full py-2">All</TabsTrigger>
+            <TabsTrigger value="EXPENSE" className="rounded-full py-2">Expense</TabsTrigger>
+            <TabsTrigger value="INCOME" className="rounded-full py-2">Income</TabsTrigger>
+            <TabsTrigger value="TRANSFER" className="rounded-full py-2">Transfer</TabsTrigger>
+          </TabsList>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search transactions..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 rounded-full dark:bg-[#121214] border-transparent dark:border-white/5"
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Transactions List */}
-      <Card className="border-none shadow-none bg-transparent">
-        <CardHeader className="px-0 pt-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium">Recent Transactions</CardTitle>
-            <p className="text-sm text-zinc-500">
-              Showing {transactions.length} of {metadata.total}
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent className="px-0 pb-0">
-          {transactions.length === 0 ? (
+        <TabsContent value={type} className="mt-0 space-y-4">
+          {isLoading ? (
+            <LoadingState />
+          ) : transactions.length === 0 ? (
             <div className="text-center py-12">
               <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No transactions found</h3>
@@ -342,7 +295,7 @@ function TransactionsPage() {
           )}
 
           {/* Pagination */}
-          {metadata.totalPages > 1 && (
+          {!isLoading && metadata.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">
               <Button
                 variant="outline"
@@ -353,7 +306,7 @@ function TransactionsPage() {
                 Previous
               </Button>
               <span className="text-sm text-muted-foreground">
-                Page {page} of {metadata.totalPages}
+                Page {page} of {metadata.totalPages} (Showing {transactions.length} of {metadata.total})
               </span>
               <Button
                 variant="outline"
@@ -365,9 +318,8 @@ function TransactionsPage() {
               </Button>
             </div>
           )}
-
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Dialog - Controlled */}
       <TransactionDialog
@@ -375,6 +327,40 @@ function TransactionsPage() {
         onOpenChange={setIsEditDialogOpen}
         transactionToEdit={transactionToEdit}
       />
+    </div>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="h-3.5 w-24 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse mb-4 ml-2" />
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between p-4 rounded-[20px] dark:bg-[#121214] bg-zinc-50 border border-transparent dark:border-white/5"
+            >
+              <div className="flex items-center gap-4 w-full">
+                {/* Icon Skeleton */}
+                <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse shrink-0" />
+                <div className="space-y-2 w-full max-w-[200px] sm:max-w-[400px]">
+                  {/* Title and Badge skeletons */}
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+                    <div className="h-4 w-12 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse" />
+                  </div>
+                  {/* Subtitle / Details skeleton */}
+                  <div className="h-3 w-48 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+                </div>
+              </div>
+              {/* Amount Skeleton */}
+              <div className="h-4 w-16 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse shrink-0" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

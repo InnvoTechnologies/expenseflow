@@ -44,7 +44,7 @@ export default function RootLayout({
         </Providers>
         <Analytics/>
         <Toaster 
-          position="top-right"
+          position="bottom-right"
           richColors
         />
       </body>

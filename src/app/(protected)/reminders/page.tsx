@@ -6,10 +6,11 @@ import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, BellRing, Pencil, Trash2, Check, X, Calendar } from "lucide-react"
+import { Plus, BellRing, Pencil, Trash2, Check, X, Calendar, Search } from "lucide-react"
 import { withProtection } from "@/lib/with-protection"
 import { AddReminderDialog } from "@/components/add-reminder-dialog"
 import { apiClient } from "@/lib/api-client"
+import { Input } from "@/components/ui/input"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,7 @@ interface Reminder {
 
 function RemindersPage() {
   const [statusFilter, setStatusFilter] = useState<ReminderStatus | "ALL">("ALL")
+  const [searchQuery, setSearchQuery] = useState("")
   const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -102,8 +104,10 @@ function RemindersPage() {
 
   // Filter reminders
   const filteredReminders = reminders.filter((reminder) => {
-    if (statusFilter === "ALL") return true
-    return reminder.status === statusFilter
+    const matchesStatus = statusFilter === "ALL" || reminder.status === statusFilter
+    const matchesSearch = reminder.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (reminder.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+    return matchesStatus && matchesSearch
   })
 
   // Check if reminder is overdue
@@ -140,22 +144,44 @@ function RemindersPage() {
       </div>
 
       {/* Status Filter */}
-      <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-        <TabsList className="w-full overflow-x-auto h-auto min-h-10 justify-start scrollbar-hide rounded-full p-1 dark:bg-[#121214]">
-          <TabsTrigger value="ALL" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">All</TabsTrigger>
-          <TabsTrigger value="PENDING" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Pending</TabsTrigger>
-          <TabsTrigger value="COMPLETED" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Completed</TabsTrigger>
-          <TabsTrigger value="SKIPPED" className="flex-shrink-0 text-xs sm:text-sm rounded-full py-2 px-4">Skipped</TabsTrigger>
-        </TabsList>
+      <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)} className="w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <TabsList className="mb-0 rounded-full p-1 h-auto">
+            <TabsTrigger value="ALL" className="rounded-full py-2">All</TabsTrigger>
+            <TabsTrigger value="PENDING" className="rounded-full py-2">Pending</TabsTrigger>
+            <TabsTrigger value="COMPLETED" className="rounded-full py-2">Completed</TabsTrigger>
+            <TabsTrigger value="SKIPPED" className="rounded-full py-2">Skipped</TabsTrigger>
+          </TabsList>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search reminders..."
+              className="pl-10 rounded-full dark:bg-[#121214] border-transparent dark:border-white/5"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
       </Tabs>
 
       {/* Reminders List */}
       {isLoading ? (
-        <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
-          <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">Loading reminders...</p>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] animate-pulse">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between w-full">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-40 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                    <div className="h-4 w-60 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                    <div className="h-3 w-32 bg-zinc-200 dark:bg-zinc-800 rounded mt-2" />
+                  </div>
+                  <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : filteredReminders.length === 0 ? (
         <Card className="border border-dashed shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
           <CardContent className="flex flex-col items-center justify-center py-12">
