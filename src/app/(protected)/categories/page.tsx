@@ -13,8 +13,9 @@ import {
   Loader2,
   Tag,
   Check,
-  Sparkles
-} from "lucide-react"
+  Sparkles,
+  Search
+} from "lucide-react" 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -117,6 +118,7 @@ function CategoriesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [activeTab, setActiveTab] = useState<"EXPENSE" | "INCOME">("EXPENSE")
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Fetch Categories
   const { data: categories, isLoading } = useQuery<Category[]>({
@@ -238,7 +240,10 @@ function CategoriesPage() {
     setIsDialogOpen(true)
   }
 
-  const filteredCategories = categories?.filter(c => c.type === activeTab) || []
+  const filteredCategories = categories?.filter(c => 
+    c.type === activeTab &&
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
 
   return (
     <div className="space-y-6">
@@ -369,64 +374,74 @@ function CategoriesPage() {
         </DialogContent>
       </Dialog>
 
-      <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
-        <CardContent className="p-6">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-full bg-zinc-100 dark:bg-white/5 p-1 h-12">
-              <TabsTrigger value="EXPENSE" className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm">EXPENSE</TabsTrigger>
-              <TabsTrigger value="INCOME" className="rounded-full text-xs font-semibold tracking-wider uppercase transition-all data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:dark:bg-white data-[state=active]:dark:text-black shadow-sm">INCOME</TabsTrigger>
-            </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <TabsList className="mb-0 rounded-full p-1 h-auto">
+            <TabsTrigger value="EXPENSE" className="rounded-full py-2">
+              Expense ({(categories?.filter(c => c.type === "EXPENSE") || []).length})
+            </TabsTrigger>
+            <TabsTrigger value="INCOME" className="rounded-full py-2">
+              Income ({(categories?.filter(c => c.type === "INCOME") || []).length})
+            </TabsTrigger>
+          </TabsList>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search categories..."
+              className="pl-10 rounded-full dark:bg-[#121214] border-transparent dark:border-white/5"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
-            <TabsContent value={activeTab} className="space-y-4 mt-6">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 animate-pulse">
-                    <div className="h-6 w-1/3 bg-muted rounded-full" />
-                    <div className="h-8 w-8 bg-muted rounded-full" />
-                  </div>
-                ))
-              ) : filteredCategories.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No categories found. Click "Add Category" to create one.
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredCategories.map((category) => (
-                    <div key={category.id} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 hover:dark:bg-white/5 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
-                          style={{ backgroundColor: category.color }}
-                        >
-                          {category.name.substring(0, 1).toUpperCase()}
-                        </div>
-                        <span className="font-medium text-sm">{category.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(category)}>
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:text-destructive"
-                          onClick={() => {
-                            if (confirm("Are you sure you want to delete this category?")) {
-                              deleteMutation.mutate(category.id)
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+        <TabsContent value={activeTab} className="space-y-4 mt-6">
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="animate-pulse border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] h-20" />
+              ))}
+            </div>
+          ) : filteredCategories.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No categories found. Click "Add Category" to create one.
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredCategories.map((category) => (
+                <Card key={category.id} className="group border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] transition-all hover:dark:bg-white/5 p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
+                      style={{ backgroundColor: category.color }}
+                    >
+                      {category.name.substring(0, 1).toUpperCase()}
                     </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                    <span className="font-medium text-sm">{category.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10" onClick={() => handleEdit(category)}>
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-destructive"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete this category?")) {
+                          deleteMutation.mutate(category.id)
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

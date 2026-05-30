@@ -9,6 +9,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useCurrency } from "@/hooks/use-currency"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sankey } from 'recharts';
+import { apiClient } from "@/lib/api-client"
 
 function InsightsPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
@@ -70,9 +71,8 @@ function InsightsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["insights", selectedMonth],
     queryFn: async () => {
-      const res = await fetch(`/api/insights?month=${selectedMonth}`)
-      if (!res.ok) throw new Error("Failed to fetch insights")
-      return res.json()
+      const res = await apiClient.get(`/insights?month=${selectedMonth}`)
+      return res.data
     }
   })
 

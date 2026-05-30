@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Tag as TagIcon, Trash2, Edit2, Loader2, Check } from "lucide-react"
+import { Plus, Tag as TagIcon, Trash2, Pencil, Loader2, Check, Search } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -57,6 +57,7 @@ export default function TagsPage() {
     const queryClient = useQueryClient()
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [editingTag, setEditingTag] = useState<any>(null)
+    const [searchQuery, setSearchQuery] = useState("")
 
     // Fetch Tags
     const { data: tags = [], isLoading } = useQuery({
@@ -141,6 +142,10 @@ export default function TagsPage() {
     }
 
     const isPending = createMutation.isPending || updateMutation.isPending
+
+    const filteredTags = tags.filter((tag: any) =>
+        tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     return (
         <div className="space-y-6">
@@ -255,54 +260,59 @@ export default function TagsPage() {
                 </Dialog>
             </div>
 
-            <Card className="border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px]">
-                <CardContent className="p-6">
-                    {isLoading ? (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 animate-pulse">
-                                    <div className="h-6 w-1/3 bg-muted rounded-full" />
-                                    <div className="h-8 w-8 bg-muted rounded-full" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                <div className="relative w-full sm:w-72 sm:ml-auto">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        placeholder="Search tags..."
+                        className="pl-10 rounded-full dark:bg-[#121214] border-transparent dark:border-white/5"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {isLoading ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <Card key={i} className="animate-pulse border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] h-20" />
+                    ))}
+                </div>
+            ) : filteredTags.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                    <TagIcon className="mx-auto h-10 w-10 mb-3 opacity-20" />
+                    <p>{searchQuery ? "No tags match your search." : "No tags found. Create one to get started."}</p>
+                </div>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredTags.map((tag: any) => (
+                        <Card key={tag.id} className="group border-none shadow-none dark:bg-[#121214] bg-zinc-50 rounded-[24px] transition-all hover:dark:bg-white/5 p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
+                                    style={{ backgroundColor: tag.color }}
+                                >
+                                    <TagIcon className="h-4 w-4 text-white" />
                                 </div>
-                            ))}
-                        </div>
-                    ) : tags.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <TagIcon className="mx-auto h-10 w-10 mb-3 opacity-20" />
-                            <p>No tags found. Create one to get started.</p>
-                        </div>
-                    ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {tags.map((tag: any) => (
-                                <div key={tag.id} className="flex items-center justify-between p-4 rounded-[20px] dark:bg-black/40 bg-white border border-transparent dark:border-white/5 hover:dark:bg-white/5 transition-all group">
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
-                                            style={{ backgroundColor: tag.color }}
-                                        >
-                                            <TagIcon className="h-4 w-4 text-white" />
-                                        </div>
-                                        <span className="font-medium text-sm">{tag.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(tag)}>
-                                            <Edit2 className="h-4 w-4 text-muted-foreground" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 hover:text-destructive"
-                                            onClick={() => handleDelete(tag.id)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                <span className="font-medium text-sm">{tag.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10" onClick={() => handleEdit(tag)}>
+                                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-destructive"
+                                    onClick={() => handleDelete(tag.id)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }

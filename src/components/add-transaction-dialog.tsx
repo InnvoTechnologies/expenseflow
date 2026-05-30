@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Check, ChevronsUpDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +18,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -109,6 +122,7 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
   const setOpen = isControlled ? onOpenChange! : setInternalOpen
 
   const [activeTab, setActiveTab] = useState<"EXPENSE" | "INCOME" | "TRANSFER">("EXPENSE")
+  const [payeeSearchOpen, setPayeeSearchOpen] = useState(false)
   const { baseCurrency } = useCurrency()
   const queryClient = useQueryClient()
   const { organizationId } = useOrganizationScope()
@@ -172,6 +186,10 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
   // Filter categories by type
   const expenseCategories = categories.filter((c: any) => c.type === "EXPENSE")
   const incomeCategories = categories.filter((c: any) => c.type === "INCOME")
+
+  const sortedActivePayees = payees
+    .filter((p: any) => !p.isArchived)
+    .sort((a: any, b: any) => a.name.localeCompare(b.name))
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(
@@ -573,26 +591,79 @@ export function TransactionDialog({ children, transactionToEdit, open: controlle
                     control={form.control}
                     name="payeeId"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Payee (Optional)</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(value === "__none__" ? undefined : value)}
-                          value={field.value || undefined}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10">
-                              <SelectValue placeholder="Select payee (optional)" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="rounded-xl dark:bg-[#121214] dark:border-white/10">
-                            <SelectItem value="__none__" className="rounded-lg">None</SelectItem>
-                            {payees.filter((p: any) => !p.isArchived).map((payee: any) => (
-                              <SelectItem key={payee.id} value={payee.id} className="rounded-lg">
-                                {payee.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <FormItem className="flex flex-col">
+                        <FormLabel className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Payee (Optional)</FormLabel>
+                        <Popover open={payeeSearchOpen} onOpenChange={setPayeeSearchOpen} modal={true}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={payeeSearchOpen}
+                                className="w-full justify-between rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4 font-normal text-left hover:bg-zinc-100 dark:hover:bg-white/5"
+                              >
+                                <span className="truncate">
+                                  {field.value
+                                    ? payees.find((p: any) => p.id === field.value)?.name || "Select payee (optional)"
+                                    : "Select payee (optional)"}
+                                </span>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2 rounded-[24px] dark:bg-[#121214] border-none shadow-2xl" align="start">
+                            <Command>
+                              <CommandInput
+                                placeholder="Search payees..."
+                                className="rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-4 mb-2"
+                              />
+                              <CommandList>
+                                <CommandEmpty>No payees found.</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="__none__"
+                                    onSelect={() => {
+                                      field.onChange(null)
+                                      setPayeeSearchOpen(false)
+                                    }}
+                                    className="rounded-lg"
+                                  >
+                                    <div className="flex items-center gap-2 w-full">
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          !field.value ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <span>None</span>
+                                    </div>
+                                  </CommandItem>
+                                  {sortedActivePayees.map((payee: any) => (
+                                    <CommandItem
+                                      key={payee.id}
+                                      value={payee.name}
+                                      onSelect={() => {
+                                        field.onChange(payee.id)
+                                        setPayeeSearchOpen(false)
+                                      }}
+                                      className="rounded-lg"
+                                    >
+                                      <div className="flex items-center gap-2 w-full">
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value === payee.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <span>{payee.name}</span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
