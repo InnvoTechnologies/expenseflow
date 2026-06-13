@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { financeAccount } from "@/db/schema";
+import { financeAccount, user as userTable, organization as organizationTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -56,10 +56,29 @@ export async function PATCH(
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
+        // Fetch base currency for enforcement
+        let enforcedCurrency = "USD";
+        if (activeOrgId) {
+            const [org] = await db
+                .select({ baseCurrency: organizationTable.baseCurrency })
+                .from(organizationTable)
+                .where(eq(organizationTable.id, activeOrgId))
+                .limit(1);
+            if (org) enforcedCurrency = org.baseCurrency;
+        } else {
+            const [u] = await db
+                .select({ baseCurrency: userTable.baseCurrency })
+                .from(userTable)
+                .where(eq(userTable.id, userId))
+                .limit(1);
+            if (u) enforcedCurrency = u.baseCurrency;
+        }
+
         const [updatedAccount] = await db
             .update(financeAccount)
             .set({
                 ...validatedData,
+                currency: enforcedCurrency,
                 type: validatedData.type as any, // Cast for enum
                 updatedAt: new Date(),
             })

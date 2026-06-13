@@ -1,23 +1,88 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db/drizzle";
-import { user, session, account, verification, organization, invitation } from "@/db/schema";
+import { user as userTable, session, account, verification, organization as organizationTable, invitation } from "@/db/schema";
 import { sendEmail } from "@/lib/mailer";
 import { ActionEmail } from "@/emails/ActionEmail";
 import { MagicCodeEmail } from "@/emails/MagicCodeEmail";
 import { captcha, Organization } from "better-auth/plugins"
 import { organization as organizationPlugin } from "better-auth/plugins"
 import { emailOTP } from "better-auth/plugins"
+import { eq } from "drizzle-orm";
+
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  PK: "PKR",
+  US: "USD",
+  IN: "INR",
+  GB: "GBP",
+  AE: "AED",
+  SA: "SAR",
+  AT: "EUR", BE: "EUR", CY: "EUR", EE: "EUR", FI: "EUR", FR: "EUR", DE: "EUR", GR: "EUR",
+  IE: "EUR", IT: "EUR", LV: "EUR", LT: "EUR", LU: "EUR", MT: "EUR", NL: "EUR", PT: "EUR",
+  SK: "EUR", SI: "EUR", ES: "EUR", HR: "EUR",
+  CA: "CAD",
+  AU: "AUD",
+  JP: "JPY",
+  CN: "CNY",
+  NZ: "NZD",
+  SG: "SGD",
+  HK: "HKD",
+  CH: "CHF",
+  SE: "SEK",
+  NO: "NOK",
+  DK: "DKK",
+  TR: "TRY",
+  BR: "BRL",
+  RU: "RUB",
+  ZA: "ZAR",
+  MX: "MXN",
+  MY: "MYR",
+  ID: "IDR",
+  TH: "THB",
+  PH: "PHP",
+  BD: "BDT",
+};
+
+function getIpFromHeaders(headers: Headers): string | null {
+  const forwardedFor = headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const ips = forwardedFor.split(",").map(ip => ip.trim());
+    if (ips[0]) return ips[0];
+  }
+  const realIp = headers.get("x-real-ip");
+  if (realIp) return realIp;
+  const cfIp = headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp;
+  return null;
+}
+
+async function detectRegionFromIp(ip: string): Promise<{ country: string; baseCurrency: string } | null> {
+  if (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("172.")) {
+    return null;
+  }
+  try {
+    const res = await fetch(`https://freeipapi.com/api/json/${ip}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const country = data.countryCode || "US";
+    const baseCurrency = COUNTRY_TO_CURRENCY[country] || "USD";
+    return { country, baseCurrency };
+  } catch (error) {
+    console.error("Error detecting region from IP:", error);
+    return null;
+  }
+}
+
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user: user,
+      user: userTable,
       session: session,
       account: account,
       verification: verification,
-      organization: organization,
+      organization: organizationTable,
       // member: member,
       invitation: invitation,
     },
@@ -96,6 +161,30 @@ export const auth = betterAuth({
   },
   secret: process.env.BETTER_AUTH_SECRET || "your-secret-key-here",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  events: {
+    user: {
+      created: async ({ user: newUser, headers }: { user: any; headers: Headers }) => {
+        try {
+          const ip = getIpFromHeaders(headers);
+          if (ip) {
+            const region = await detectRegionFromIp(ip);
+            if (region) {
+              await db.update(userTable)
+                .set({
+                  baseCurrency: region.baseCurrency,
+                  country: region.country,
+                  updatedAt: new Date()
+                })
+                .where(eq(userTable.id, newUser.id));
+              console.log(`[Auth Event] Set new user ${newUser.email} currency to ${region.baseCurrency} (${region.country}) based on IP ${ip}`);
+            }
+          }
+        } catch (err) {
+          console.error("Error in user.created event handler:", err);
+        }
+      }
+    }
+  },
   plugins: [ 
     // captcha({ 
     //     provider: "google-recaptcha", 
@@ -110,9 +199,33 @@ export const auth = betterAuth({
       // Auto-create organization when user registers
       organizationCreation: {
         disabled: false,
-        afterCreate: async ({organization, member, user }: {organization: Organization, member: any, user: any}, request: any) => {
-          // You can add custom logic here like creating default resources
-          console.log(`Organization "${organization.name}" created for user ${user.email}`);
+        afterCreate: async ({ organization: newOrg, member, user: authUser }: {organization: Organization, member: any, user: any}, request: any) => {
+          console.log(`Organization "${newOrg.name}" created for user ${authUser.email}`);
+          try {
+            // Fetch the user's baseCurrency, country, and numberFormat
+            const [freshUser] = await db
+              .select({
+                baseCurrency: userTable.baseCurrency,
+                country: userTable.country,
+                numberFormat: userTable.numberFormat,
+              })
+              .from(userTable)
+              .where(eq(userTable.id, authUser.id))
+              .limit(1);
+
+            if (freshUser) {
+              await db.update(organizationTable)
+                .set({
+                  baseCurrency: freshUser.baseCurrency,
+                  country: freshUser.country,
+                  numberFormat: freshUser.numberFormat,
+                })
+                .where(eq(organizationTable.id, newOrg.id));
+              console.log(`[Org Hook] Set new organization "${newOrg.name}" currency settings to match user: ${freshUser.baseCurrency}`);
+            }
+          } catch (err) {
+            console.error("Error setting organization currency in afterCreate hook:", err);
+          }
         }
       },
       // Allow users to create organizations

@@ -51,6 +51,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "consola": "^3.4.2",
+    "country-list": "^2.4.1",
     "currency-codes": "^2.2.0",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
@@ -86,6 +87,7 @@
   },
   "devDependencies": {
     "@dyad-sh/nextjs-webpack-component-tagger": "^0.8.0",
+    "@types/country-list": "^2.1.4",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^20",
     "@types/pg": "^8.15.4",

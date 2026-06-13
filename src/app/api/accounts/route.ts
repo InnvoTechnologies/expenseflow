@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { financeAccount, financeAccountTypeEnum } from "@/db/schema";
+import { financeAccount, financeAccountTypeEnum, user as userTable, organization as organizationTable } from "@/db/schema";
 import { eq, or, and, desc } from "drizzle-orm";
 import { z } from "zod";
 
@@ -69,12 +69,30 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const validatedData = createAccountSchema.parse(body);
 
+        // Fetch base currency for enforcement
+        let enforcedCurrency = "USD";
+        if (activeOrgId) {
+            const [org] = await db
+                .select({ baseCurrency: organizationTable.baseCurrency })
+                .from(organizationTable)
+                .where(eq(organizationTable.id, activeOrgId))
+                .limit(1);
+            if (org) enforcedCurrency = org.baseCurrency;
+        } else {
+            const [u] = await db
+                .select({ baseCurrency: userTable.baseCurrency })
+                .from(userTable)
+                .where(eq(userTable.id, userId))
+                .limit(1);
+            if (u) enforcedCurrency = u.baseCurrency;
+        }
+
         const [newAccount] = await db
             .insert(financeAccount)
             .values({
                 name: validatedData.name,
                 type: validatedData.type as any, // Cast to any to satisfy Drizzle enum type check if needed, or precise type
-                currency: validatedData.currency,
+                currency: enforcedCurrency,
                 currentBalance: validatedData.currentBalance,
                 userId: activeOrgId ? null : userId,
                 organizationId: activeOrgId ? activeOrgId : null,

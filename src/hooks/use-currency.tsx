@@ -4,23 +4,16 @@ import { useAuth } from "@/hooks/use-auth"
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
-
-const CURRENCY_NAMES: Record<string, string> = {
-  PKR: "Pakistani Rupee",
-  USD: "US Dollar",
-  EUR: "Euro",
-  GBP: "British Pound",
-  INR: "Indian Rupee",
-  AED: "UAE Dirham",
-  SAR: "Saudi Riyal",
-}
+import { useOrganization } from "@/hooks/use-organization"
+import * as currencyCodes from "currency-codes"
 
 export function useCurrency() {
   const { user } = useAuth()
+  const { activeOrganization } = useOrganization()
 
   // Fetch currency settings from API
   const { data: settings } = useQuery({
-    queryKey: ["currency-settings", user?.id],
+    queryKey: ["currency-settings", user?.id, activeOrganization?.id || "personal"],
     queryFn: async () => {
       if (!user?.id) return null
       const res = await apiClient.get("/profile")
@@ -35,7 +28,8 @@ export function useCurrency() {
   const numberFormat = settings?.numberFormat ?? 2
 
   const currencyName = useMemo(() => {
-    return CURRENCY_NAMES[baseCurrency] || baseCurrency
+    const currency = currencyCodes.code(baseCurrency)
+    return currency?.currency || baseCurrency
   }, [baseCurrency])
 
   const formatAmount = useMemo(() => {

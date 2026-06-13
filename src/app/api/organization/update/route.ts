@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db/drizzle";
-import { organization, member } from "@/db/schema";
+import { organization, member, financeAccount } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 
@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
     if (data.slug) updateData.slug = data.slug.trim().toLowerCase();
     if (data.logo !== undefined) updateData.logo = data.logo;
     if (data.metadata !== undefined) updateData.metadata = data.metadata;
+    if (data.baseCurrency) updateData.baseCurrency = data.baseCurrency;
+    if (data.country) updateData.country = data.country;
+    if (data.numberFormat !== undefined) updateData.numberFormat = data.numberFormat;
 
     // If slug is being updated, check if it's already taken by another organization
     if (data.slug) {
@@ -107,6 +110,13 @@ export async function POST(req: NextRequest) {
       .set(updateData)
       .where(eq(organization.id, targetOrgId))
       .returning();
+
+    // Cascade currency change to all organization finance accounts
+    if (data.baseCurrency) {
+      await db.update(financeAccount)
+        .set({ currency: data.baseCurrency })
+        .where(eq(financeAccount.organizationId, targetOrgId));
+    }
 
     return NextResponse.json({
       status: 200,

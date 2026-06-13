@@ -57,6 +57,9 @@ export const user = pgTable("user", {
   stripeCustomerId: text("stripe_customer_id"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  baseCurrency: text("base_currency").default("USD").notNull(),
+  country: text("country").default("US").notNull(),
+  numberFormat: integer("number_format").default(2).notNull(),
 });
 
 export const session = pgTable("session", {
@@ -124,6 +127,9 @@ export const organization = pgTable("organization", {
   timezone: text("timezone"),
   subscriptionStatus: text("subscription_status"),
   subscriptionGraceEndDate: timestamp("subscription_grace_end_date"),
+  baseCurrency: text("base_currency").default("USD").notNull(),
+  country: text("country").default("US").notNull(),
+  numberFormat: integer("number_format").default(2).notNull(),
 });
 
 export const invitation = pgTable("invitation", {

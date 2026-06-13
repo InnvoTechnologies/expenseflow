@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -26,9 +26,31 @@ import { Eye, EyeOff } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { apiClient } from "@/lib/api-client"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import * as currencyCodes from "currency-codes"
+import { getData as getCountries } from "country-list"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 
+const ALL_COUNTRIES = getCountries().sort((a, b) => a.name.localeCompare(b.name));
+
+function getCurrencyList() {
+  return currencyCodes
+    .codes()
+    .map((code: string) => {
+      const currency = currencyCodes.code(code)
+      return {
+        code: code || "",
+        name: currency?.currency || "",
+      }
+    })
+    .filter((c) => c.code && c.name)
+    .sort((a, b) => a.code.localeCompare(b.code))
+}
 
 export default function SettingsPage() {
+  const currencyList = useMemo(() => getCurrencyList(), [])
   const [isEditing, setIsEditing] = useState(false)
   const { theme, setTheme } = useTheme()
   const { user } = useAuth()
@@ -36,9 +58,11 @@ export default function SettingsPage() {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [currencyState, setCurrencyState] = useState({
     baseCurrency: baseCurrency,
-    country: country || "PK",
+    country: country || "US",
     numberFormat: numberFormat,
   })
+  const [currencyOpen, setCurrencyOpen] = useState(false)
+  const [countryOpen, setCountryOpen] = useState(false)
   // legacy local password state removed in favor of react-hook-form
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
@@ -193,14 +217,14 @@ export default function SettingsPage() {
   },[])
 
   useEffect(() => {
-    if (user) {
+    if (baseCurrency) {
       setCurrencyState({
-        baseCurrency: user.baseCurrency || "PKR",
-        country: user.country || "PK",
-        numberFormat: user.numberFormat ?? 2,
+        baseCurrency: baseCurrency,
+        country: country || "US",
+        numberFormat: numberFormat ?? 2,
       })
     }
-  }, [user])
+  }, [baseCurrency, country, numberFormat])
 
   const saveCurrencySettings = useMutation({
     mutationFn: async (values: { baseCurrency: string; country: string; numberFormat: number }) => {
@@ -651,47 +675,112 @@ export default function SettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Base Currency</Label>
-                    <Select 
-                      value={currencyState.baseCurrency} 
-                      onValueChange={(value) => setCurrencyState({ ...currencyState, baseCurrency: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PKR">PKR - Pakistani Rupee</SelectItem>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                        <SelectItem value="INR">INR - Indian Rupee</SelectItem>
-                        <SelectItem value="AED">AED - UAE Dirham</SelectItem>
-                        <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2 flex flex-col">
+                    <Label className="mb-1">Base Currency</Label>
+                    <Popover open={currencyOpen} onOpenChange={setCurrencyOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={currencyOpen}
+                          className="w-full justify-between rounded-full bg-zinc-100/50 dark:bg-white/5 border border-transparent hover:border-zinc-200 dark:hover:border-white/10 h-10 px-4 font-normal text-left hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-900 dark:text-zinc-100"
+                        >
+                          <span className="truncate">
+                            {currencyState.baseCurrency
+                              ? `${currencyState.baseCurrency} - ${currencyList.find((c) => c.code === currencyState.baseCurrency)?.name || ""}`
+                              : "Select currency"}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2 rounded-[24px] dark:bg-[#121214] border border-white/5 shadow-2xl" align="start">
+                        <Command className="bg-transparent">
+                          <CommandInput placeholder="Search currency..." className="rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-4 mb-2" />
+                          <CommandList className="max-h-[200px]">
+                            <CommandEmpty>No currency found.</CommandEmpty>
+                            <CommandGroup>
+                              {currencyList.map((c) => (
+                                <CommandItem
+                                  key={c.code}
+                                  value={`${c.code} ${c.name}`}
+                                  onSelect={() => {
+                                    setCurrencyState({ ...currencyState, baseCurrency: c.code })
+                                    setCurrencyOpen(false)
+                                  }}
+                                  className="rounded-lg cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2 w-full">
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        currencyState.baseCurrency === c.code ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span>{c.code} - {c.name}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <p className="text-sm text-muted-foreground">
                       This currency will be used for reporting and insights
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Select 
-                      value={currencyState.country} 
-                      onValueChange={(value) => setCurrencyState({ ...currencyState, country: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PK">Pakistan</SelectItem>
-                        <SelectItem value="US">United States</SelectItem>
-                        <SelectItem value="GB">United Kingdom</SelectItem>
-                        <SelectItem value="IN">India</SelectItem>
-                        <SelectItem value="AE">United Arab Emirates</SelectItem>
-                        <SelectItem value="SA">Saudi Arabia</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2 flex flex-col">
+                    <Label className="mb-1">Country</Label>
+                    <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={countryOpen}
+                          className="w-full justify-between rounded-full bg-zinc-100/50 dark:bg-white/5 border border-transparent hover:border-zinc-200 dark:hover:border-white/10 h-10 px-4 font-normal text-left hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-900 dark:text-zinc-100"
+                        >
+                          <span className="truncate">
+                            {currencyState.country
+                              ? ALL_COUNTRIES.find((c) => c.code === currencyState.country)?.name || currencyState.country
+                              : "Select country"}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2 rounded-[24px] dark:bg-[#121214] border border-white/5 shadow-2xl" align="start">
+                        <Command className="bg-transparent">
+                          <CommandInput placeholder="Search country..." className="rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-4 mb-2" />
+                          <CommandList className="max-h-[200px]">
+                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandGroup>
+                              {ALL_COUNTRIES.map((c) => (
+                                <CommandItem
+                                  key={c.code}
+                                  value={c.name}
+                                  onSelect={() => {
+                                    setCurrencyState({ ...currencyState, country: c.code })
+                                    setCountryOpen(false)
+                                  }}
+                                  className="rounded-lg cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2 w-full">
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        currencyState.country === c.code ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span>{c.name}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label>Number Format</Label>
