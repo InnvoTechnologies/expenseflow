@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+.env*
+!.env.docker.example
+*.pem
+*.key
+*.log
+*.tsbuildinfo
+.DS_Store
+coverage
+.vercel
+.aws
+.codex
+.agents
