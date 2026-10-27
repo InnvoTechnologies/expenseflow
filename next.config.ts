@@ -2,6 +2,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   webpack: (config, { isServer }) => {
     // Exclude binary files and native modules from Webpack processing
     config.module.rules.push({

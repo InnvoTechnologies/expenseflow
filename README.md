@@ -47,6 +47,22 @@ A modern, full-stack finance application built with Next.js 15, specialized in m
 - **State Management**: TanStack Query
 - **Charts**: Recharts
 
+## Self-host with Docker Compose
+
+```sh
+cp .env.docker.example .env.docker
+# Set POSTGRES_PASSWORD and BETTER_AUTH_SECRET to independently generated secrets.
+docker compose --env-file .env.docker up --build -d
+```
+
+Open [http://localhost:3000](http://localhost:3000). Compose provisions PostgreSQL,
+runs migrations, and starts the app with persistent database storage.
+Configure Resend for signup verification and password resets. Add an OpenRouter
+key to enable the copilot.
+
+See the [self-hosting guide](docs/self-hosting.md) for setup, public hosting,
+configuration, updates and backups.
+
 ## ⚡ Getting Started
 
 ### Prerequisites
