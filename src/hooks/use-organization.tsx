@@ -158,6 +158,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['insights'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['agents'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['api-keys'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['currency-settings'], exact: false });
     } catch (error) {
       console.error("Error setting active organization:", error);
       toast.error("Failed to set active organization");

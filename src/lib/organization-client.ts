@@ -44,7 +44,7 @@ export const organizationClient = {
 
   // Update organization
   update: async ({ data, organizationId }: {
-    data: { name?: string; slug?: string; logo?: string; metadata?: any };
+    data: { name?: string; slug?: string; logo?: string; metadata?: any; baseCurrency?: string; country?: string; numberFormat?: number };
     organizationId?: string;
   }) => {
     try {

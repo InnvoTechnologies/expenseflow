@@ -87,7 +87,7 @@ export function AddReminderDialog({
 
   const createMutation = useMutation({
     mutationFn: async (values: ReminderFormValues) => {
-      const res = await apiClient.post("/reminders", values)
+      const res = await apiClient.post("/reminders", { ...values, dueDate: new Date(values.dueDate).toISOString() })
       return res.data
     },
     onSuccess: () => {
@@ -101,7 +101,7 @@ export function AddReminderDialog({
 
   const editMutation = useMutation({
     mutationFn: async (values: ReminderFormValues) => {
-      const res = await apiClient.patch(`/reminders/${reminderToEdit.id}`, values)
+      const res = await apiClient.patch(`/reminders/${reminderToEdit.id}`, { ...values, dueDate: new Date(values.dueDate).toISOString() })
       return res.data
     },
     onSuccess: () => {

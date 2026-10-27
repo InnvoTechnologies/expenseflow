@@ -112,6 +112,7 @@ export function AddAccountDialog({ children }: AddAccountDialogProps) {
             <Select 
               value={selectedCurrency || baseCurrency} 
               onValueChange={setSelectedCurrency}
+              disabled
             >
               <SelectTrigger className="rounded-full bg-zinc-100/50 dark:bg-white/5 border-transparent h-10 px-4">
                 <SelectValue placeholder="Select currency" />

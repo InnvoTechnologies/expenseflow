@@ -1,3 +1,5 @@
+import { ChatError, failure } from "@/lib/chat/core";
+import { requestScope } from "@/lib/chat/rest";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id;
 
     try {
+        await requestScope(req, session.user.id);
         // 1. Get User/Org Accounts
         let accountWhereClause;
         if (activeOrgId) {
@@ -343,6 +346,7 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (error: any) {
+        if (error instanceof ChatError) return failure(error);
         console.error("Dashboard API Error:", error);
         return NextResponse.json({ error: "Failed to fetch dashboard data" }, { status: 500 });
     }

@@ -7,9 +7,15 @@ import {
   integer,
   varchar,
   pgEnum,
-  decimal
+  decimal,
+  jsonb,
+  bigint,
+  index,
+  uniqueIndex,
+  check,
+  foreignKey
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ----------------------------------------------------------------------
 // 1. ENUMS (Finance Specific)
@@ -48,6 +54,7 @@ export const subscriptionBillingCycleEnum = pgEnum('subscription_billing_cycle',
 // ----------------------------------------------------------------------
 
 export const user = pgTable("user", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: boolean("emailVerified").notNull().default(false),
@@ -57,6 +64,9 @@ export const user = pgTable("user", {
   stripeCustomerId: text("stripe_customer_id"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  baseCurrency: text("base_currency").default("USD").notNull(),
+  country: text("country").default("US").notNull(),
+  numberFormat: integer("number_format").default(2).notNull(),
 });
 
 export const session = pgTable("session", {
@@ -114,6 +124,7 @@ export const subscription = pgTable("subscription", {
 });
 
 export const organization = pgTable("organization", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   slug: text("slug").unique(),
@@ -124,6 +135,9 @@ export const organization = pgTable("organization", {
   timezone: text("timezone"),
   subscriptionStatus: text("subscription_status"),
   subscriptionGraceEndDate: timestamp("subscription_grace_end_date"),
+  baseCurrency: text("base_currency").default("USD").notNull(),
+  country: text("country").default("US").notNull(),
+  numberFormat: integer("number_format").default(2).notNull(),
 });
 
 export const invitation = pgTable("invitation", {
@@ -137,7 +151,7 @@ export const invitation = pgTable("invitation", {
 
 export const member = pgTable("members", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
 
   // FIXED: Changed from uuid to text to match organization.id definition
   organizationId: uuid("organization_id").notNull().references(() => organization.id),
@@ -150,7 +164,10 @@ export const member = pgTable("members", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  uniqueIndex("members_user_org_unique").on(t.userId, t.organizationId),
+  index("members_lookup_idx").on(t.userId, t.organizationId, t.status),
+]);
 
 // ----------------------------------------------------------------------
 // 3. FINANCE SCHEMA (New Updates)
@@ -159,6 +176,7 @@ export const member = pgTable("members", {
 // Represents a wallet, bank account, or cash drawer.
 // Scoped to EITHER a User (Personal) OR an Organization (Business).
 export const financeAccount = pgTable("finance_account", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
 
   name: text("name").notNull(), // e.g. "Chase Business", "Personal Savings"
@@ -175,11 +193,16 @@ export const financeAccount = pgTable("finance_account", {
   isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  check("finance_account_ownership", sql`(${t.userId} IS NULL) <> (${t.organizationId} IS NULL)`),
+  index("finance_account_user_idx").on(t.userId),
+  index("finance_account_org_idx").on(t.organizationId),
+]);
 
 // Categories for Income/Expense. 
 // Users create their own, Orgs create their own.
 export const category = pgTable("category", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(), // "Groceries", "Server Costs"
   type: categoryTypeEnum("type").default("EXPENSE").notNull(),
@@ -193,11 +216,17 @@ export const category = pgTable("category", {
   // Hierarchical categories (e.g. Utilities -> Electric)
   parentId: uuid("parent_id"), // Self-reference added in relations below
 
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, t => [
+  check("category_ownership", sql`(${t.userId} IS NULL) <> (${t.organizationId} IS NULL)`),
+  index("category_user_idx").on(t.userId),
+  index("category_org_idx").on(t.organizationId),
+]);
 
 // The Central Ledger
 export const transaction = pgTable("transaction", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
 
   amount: decimal("amount", { precision: 19, scale: 4 }).notNull(),
@@ -222,6 +251,7 @@ export const transaction = pgTable("transaction", {
   // Deducted from the transaction amount effectively, or tracked alongside it.
   feeAmount: decimal("fee_amount", { precision: 19, scale: 4 }).default("0"),
   exchangeRate: decimal("exchange_rate", { precision: 19, scale: 6 }).default("1"),
+  destinationAmount: decimal("destination_amount", { precision: 19, scale: 4 }),
   // Status tracking
   status: text("status").default("completed"), // pending, completed, failed
 
@@ -233,10 +263,14 @@ export const transaction = pgTable("transaction", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  index("transaction_account_date_idx").on(t.accountId, t.date, t.id),
+  index("transaction_destination_date_idx").on(t.toAccountId, t.date, t.id),
+]);
 
 // Payees (People or Entities being paid)
 export const payee = pgTable("payee", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   email: text("email"),
@@ -251,10 +285,15 @@ export const payee = pgTable("payee", {
   isArchived: boolean("is_archived").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  check("payee_ownership", sql`(${t.userId} IS NULL) <> (${t.organizationId} IS NULL)`),
+  index("payee_user_idx").on(t.userId),
+  index("payee_org_idx").on(t.organizationId),
+]);
 
 // Reminders for bills and financial obligations
 export const reminder = pgTable("reminder", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
 
   title: text("title").notNull(), // "Pay Electricity Bill"
@@ -271,10 +310,15 @@ export const reminder = pgTable("reminder", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  check("reminder_ownership", sql`(${t.userId} IS NULL) <> (${t.organizationId} IS NULL)`),
+  index("reminder_user_idx").on(t.userId),
+  index("reminder_org_idx").on(t.organizationId),
+]);
 
 // Subscription Tracking - for tracking recurring subscriptions (Netflix, Spotify, etc.)
 export const subscriptionTracking = pgTable("subscription_tracking", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
 
   title: text("title").notNull(), // "Netflix Premium", "Spotify Premium"
@@ -309,7 +353,11 @@ export const subscriptionTracking = pgTable("subscription_tracking", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  check("subscription_tracking_ownership", sql`(${t.userId} IS NULL) <> (${t.organizationId} IS NULL)`),
+  index("subscription_tracking_user_idx").on(t.userId),
+  index("subscription_tracking_org_idx").on(t.organizationId),
+]);
 
 // ----------------------------------------------------------------------
 // 4. RELATIONS
@@ -427,6 +475,7 @@ export const subscriptionTrackingRelations = relations(subscriptionTracking, ({ 
 }));
 
 export const tag = pgTable("tag", {
+  version: integer("version").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   color: text("color").default("#000000").notNull(),
@@ -437,5 +486,85 @@ export const tag = pgTable("tag", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, t => [
+  check("tag_ownership", sql`(${t.userId} IS NULL) <> (${t.organizationId} IS NULL)`),
+  index("tag_user_idx").on(t.userId),
+  index("tag_org_idx").on(t.organizationId),
+]);
 
+
+// Persisted copilot conversations. Organization scope is immutable in the service.
+const instant = (name: string) => timestamp(name, { withTimezone: true });
+export const chatConversation = pgTable("chat_conversation", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  organizationId: uuid("organization_id").references(() => organization.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 160 }).notNull().default("New conversation"),
+  timezone: text("timezone").notNull(), locale: varchar("locale", { length: 64 }).notNull(),
+  status: text("status").notNull().default("active"),
+  nextMessageSequence: bigint("next_message_sequence", { mode: "number" }).notNull().default(1),
+  createdAt: instant("created_at").notNull().defaultNow(), updatedAt: instant("updated_at").notNull().defaultNow(),
+}, t => [
+  index("chat_personal_idx").on(t.userId, t.updatedAt, t.id).where(sql`${t.organizationId} IS NULL`),
+  index("chat_organization_idx").on(t.userId, t.organizationId, t.updatedAt, t.id).where(sql`${t.organizationId} IS NOT NULL`),
+  check("chat_conversation_status", sql`${t.status} IN ('active','archived')`),
+]);
+export const chatRun = pgTable("chat_run", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => chatConversation.id, { onDelete: "cascade" }),
+  clientRequestId: uuid("client_request_id").notNull(), requestHash: text("request_hash").notNull(),
+  status: text("status").notNull().default("queued"),
+  provider: text("provider").notNull().default("openrouter"), model: text("model").notNull().default("openai/gpt-6-luna"),
+  timezone: text("timezone").notNull(), locale: varchar("locale", { length: 64 }).notNull(),
+  inputTokens: integer("input_tokens"), outputTokens: integer("output_tokens"), providerRequestId: text("provider_request_id"),
+  errorCode: text("error_code"), leaseExpiresAt: instant("lease_expires_at"),
+  createdAt: instant("created_at").notNull().defaultNow(), completedAt: instant("completed_at"),
+}, t => [
+  uniqueIndex("chat_run_request_unique").on(t.conversationId, t.clientRequestId),
+  uniqueIndex("chat_run_scope_unique").on(t.id, t.conversationId),
+  uniqueIndex("chat_one_active_run").on(t.conversationId).where(sql`${t.status} IN ('queued','running')`),
+  check("chat_run_status", sql`${t.status} IN ('queued','running','completed','failed','interrupted')`),
+]);
+export const chatMessage = pgTable("chat_message", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => chatConversation.id, { onDelete: "cascade" }),
+  runId: uuid("run_id").notNull(), sequence: bigint("sequence", { mode: "number" }).notNull(),
+  role: text("role").notNull(), content: jsonb("content").notNull(),
+  createdAt: instant("created_at").notNull().defaultNow(),
+}, t => [
+  uniqueIndex("chat_message_sequence_unique").on(t.conversationId, t.sequence),
+  index("chat_message_run_idx").on(t.runId, t.sequence),
+  foreignKey({ columns: [t.runId, t.conversationId], foreignColumns: [chatRun.id, chatRun.conversationId] }).onDelete("cascade"),
+  check("chat_message_role", sql`${t.role} IN ('user','assistant','tool')`),
+]);
+export const chatActionBatch = pgTable("chat_action_batch", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => chatConversation.id, { onDelete: "cascade" }),
+  runId: uuid("run_id").notNull(), supersedesBatchId: uuid("supersedes_batch_id"),
+  version: integer("version").notNull().default(1), status: text("status").notNull().default("pending"),
+  previewHash: text("preview_hash").notNull(), expiresAt: instant("expires_at").notNull(),
+  approvedBy: uuid("approved_by").references(() => user.id, { onDelete: "set null" }),
+  approvedAt: instant("approved_at"), executedAt: instant("executed_at"), executionKey: uuid("execution_key").unique(),
+  result: jsonb("result"), errorCode: text("error_code"), createdAt: instant("created_at").notNull().defaultNow(),
+}, t => [
+  uniqueIndex("chat_batch_scope_unique").on(t.id, t.conversationId),
+  index("chat_batch_conversation_idx").on(t.conversationId, t.createdAt),
+  index("chat_batch_expiry_idx").on(t.expiresAt).where(sql`${t.status} = 'pending'`),
+  foreignKey({ columns: [t.runId, t.conversationId], foreignColumns: [chatRun.id, chatRun.conversationId] }).onDelete("cascade"),
+  foreignKey({ columns: [t.supersedesBatchId, t.conversationId], foreignColumns: [t.id, t.conversationId] }),
+  check("chat_batch_status", sql`${t.status} IN ('pending','superseded','rejected','expired','executed','failed')`),
+  check("chat_batch_version", sql`${t.version} > 0`),
+  check("chat_batch_execution", sql`${t.status} <> 'executed' OR (${t.approvedAt} IS NOT NULL AND ${t.executedAt} IS NOT NULL)`),
+]);
+export const chatAction = pgTable("chat_action", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  batchId: uuid("batch_id").notNull().references(() => chatActionBatch.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(), toolCallId: text("tool_call_id").notNull(), toolName: text("tool_name").notNull(),
+  schemaVersion: integer("schema_version").notNull().default(1),
+  arguments: jsonb("arguments").notNull(), preview: jsonb("preview").notNull(), preconditions: jsonb("preconditions").notNull(),
+  result: jsonb("result"), createdAt: instant("created_at").notNull().defaultNow(),
+}, t => [
+  uniqueIndex("chat_action_position_unique").on(t.batchId, t.position),
+  uniqueIndex("chat_action_call_unique").on(t.batchId, t.toolCallId),
+  check("chat_action_position", sql`${t.position} >= 0`),
+]);
