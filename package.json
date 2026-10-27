@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:copilot": "vitest run",
+    "db:chatbot:audit": "tsx scripts/chatbot-db.ts",
+    "db:chatbot:migrate": "tsx scripts/chatbot-db.ts --apply"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.908.0",

@@ -1,18 +1,11 @@
+import { mutate, requestScope } from "@/lib/chat/rest";
+import { ChatError, failure } from "@/lib/chat/core";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { financeAccount, financeAccountTypeEnum, user as userTable, organization as organizationTable } from "@/db/schema";
-import { eq, or, and, desc } from "drizzle-orm";
-import { z } from "zod";
-
-const createAccountSchema = z.object({
-    name: z.string().min(1),
-    type: z.enum(["BANK", "CASH", "MOBILE_WALLET", "CREDIT_CARD"]),
-    currency: z.string().default("USD"),
-    currentBalance: z.number().or(z.string()).transform(val => val.toString()),
-    isDefault: z.boolean().optional(),
-});
+import { financeAccount } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
     const session = await auth.api.getSession({
@@ -28,6 +21,7 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id;
 
     try {
+        await requestScope(req, session.user.id);
         let whereClause;
 
         if (activeOrgId) {
@@ -44,6 +38,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(accounts);
     } catch (error) {
+        if (error instanceof ChatError) return failure(error);
         console.error("Error fetching accounts:", error);
         return NextResponse.json(
             { error: "Failed to fetch accounts" },
@@ -52,63 +47,8 @@ export async function GET(req: NextRequest) {
     }
 }
 
+
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    });
-
-    if (!session) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const headersList = await headers();
-    const activeOrgId = headersList.get("X-Organization-Id");
-    const userId = session.user.id;
-
-    try {
-        const body = await req.json();
-        const validatedData = createAccountSchema.parse(body);
-
-        // Fetch base currency for enforcement
-        let enforcedCurrency = "USD";
-        if (activeOrgId) {
-            const [org] = await db
-                .select({ baseCurrency: organizationTable.baseCurrency })
-                .from(organizationTable)
-                .where(eq(organizationTable.id, activeOrgId))
-                .limit(1);
-            if (org) enforcedCurrency = org.baseCurrency;
-        } else {
-            const [u] = await db
-                .select({ baseCurrency: userTable.baseCurrency })
-                .from(userTable)
-                .where(eq(userTable.id, userId))
-                .limit(1);
-            if (u) enforcedCurrency = u.baseCurrency;
-        }
-
-        const [newAccount] = await db
-            .insert(financeAccount)
-            .values({
-                name: validatedData.name,
-                type: validatedData.type as any, // Cast to any to satisfy Drizzle enum type check if needed, or precise type
-                currency: enforcedCurrency,
-                currentBalance: validatedData.currentBalance,
-                userId: activeOrgId ? null : userId,
-                organizationId: activeOrgId ? activeOrgId : null,
-                isDefault: validatedData.isDefault || false,
-            })
-            .returning();
-
-        return NextResponse.json(newAccount);
-    } catch (error) {
-        console.error("Error creating account:", error);
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.errors }, { status: 400 });
-        }
-        return NextResponse.json(
-            { error: "Failed to create account" },
-            { status: 500 }
-        );
-    }
+    // Authentication, workspace checks, validation and creation are shared with copilot tools.
+    return mutate(req, "create_account");
 }

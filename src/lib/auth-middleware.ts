@@ -3,6 +3,11 @@ import { auth } from "./auth";
 
 export async function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Copilot handlers authenticate requests themselves and return JSON 401s.
+  // A redirect here would turn a native client's expired session into HTML.
+  if (pathname === '/api/chat' || pathname === '/api/copilot' || pathname.startsWith('/api/copilot/')) {
+    return NextResponse.next();
+  }
   
   // Public routes that don't require authentication
   const publicRoutes = [
