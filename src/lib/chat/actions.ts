@@ -218,6 +218,7 @@ export async function approve(
       const result = {
         resources: results,
         invalidate: [
+          "savings-goals",
           "accounts",
           "transactions",
           "categories",

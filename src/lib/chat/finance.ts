@@ -145,7 +145,7 @@ const dbFields = (v: Record<string, any>) =>
       .map(([k, value]) => [
         snake(k),
         value !== null &&
-        ["date", "startDate", "endDate", "dueDate"].includes(k)
+        ["date", "startDate", "endDate", "dueDate", "deadline"].includes(k)
           ? new Date(value).toISOString()
           : value,
       ]),
@@ -154,6 +154,17 @@ const ownership = (s: Scope) => ({
   user_id: s.organizationId ? null : s.userId,
   organization_id: s.organizationId,
 });
+export async function scopeCurrency(c: Connection, s: Scope) {
+  const [record] = await rows(
+    c,
+    s.organizationId
+      ? "SELECT base_currency FROM organization WHERE id=$1"
+      : 'SELECT base_currency FROM "user" WHERE id=$1',
+    [s.organizationId || s.userId],
+  );
+  if (!record) throw new ChatError(404, "SCOPE_NOT_FOUND");
+  return record.base_currency;
+}
 async function validateEntity(
   c: Connection,
   s: Scope,
@@ -162,6 +173,10 @@ async function validateEntity(
   id: string,
   pre: Preconditions,
 ) {
+  if (entity === "account" && data.subtype && data.type !== "BANK")
+    throw new ChatError(400, "INVALID_ACCOUNT_SUBTYPE");
+  if (entity === "payee" && data.defaultCategoryId)
+    await scoped(c, "category", data.defaultCategoryId, s, pre);
   if (entity === "account" && data.currency) {
     const [linked] = await rows(
       c,
@@ -374,15 +389,30 @@ export async function executeOperation(
       };
       results.push(await executeOperation(c, s, sub));
       Object.assign(pre, sub.preconditions);
+      args.categories[i] = sub.arguments;
       if (!op.generatedIds) op.generatedIds = [];
       op.generatedIds[i] = sub.generatedId!;
     }
+    op.arguments = args;
     op.preview = { operation: op.toolName, after: results };
     op.preconditions = pre;
     op.result = { resources: results };
     return { resources: results };
   }
-  if (tool.endsWith("_transaction")) {
+  if (tool === "contribute_savings_goal") {
+    before = await scoped(c, "savings_goal", args.id, s, pre, true);
+    const { contribute } = await import("./savings");
+    const contribution = await contribute(
+      c,
+      s,
+      args.id,
+      { amount: args.amount, clientRequestId: args.clientRequestId },
+      generatedId,
+    );
+    result = await scoped(c, "savings_goal", args.id, s);
+    path = "/savings";
+    op.result = contribution;
+  } else if (tool.endsWith("_transaction")) {
     path = "/transactions";
     if (args.id) before = await scoped(c, "transaction", args.id, s, pre, true);
     if (tool === "delete_transaction") {
@@ -507,6 +537,48 @@ export async function executeOperation(
       const data = tool.startsWith("create_")
         ? args
         : { ...publicRecord(before!), ...args.patch };
+      const changed = tool.startsWith("create_") ? args : args.patch;
+      if (entity === "category") {
+        if (tool.startsWith("create_") && changed.iconName === undefined)
+          changed.iconName =
+            data.type === "INCOME" ? "briefcase.fill" : "cart.fill";
+        if (changed.monthlyBudget === null) {
+          changed.budgetCurrency = null;
+        } else if (
+          data.monthlyBudget !== null &&
+          data.monthlyBudget !== undefined
+        ) {
+          if (changed.budgetCurrency === null)
+            throw new ChatError(400, "BUDGET_CURRENCY_REQUIRED");
+          if (!data.budgetCurrency)
+            changed.budgetCurrency = await scopeCurrency(c, s);
+        } else if (
+          changed.budgetCurrency !== undefined &&
+          changed.budgetCurrency !== null
+        )
+          throw new ChatError(400, "BUDGET_AMOUNT_REQUIRED");
+      }
+      if (entity === "reminder" && !data.currency) {
+        changed.currency = data.accountId
+          ? (await scoped(c, "finance_account", data.accountId, s, pre))
+              .currency
+          : await scopeCurrency(c, s);
+      }
+      if (entity === "savings_goal" && before) {
+        if (changed.currentAmount !== undefined)
+          throw new ChatError(400, "USE_CONTRIBUTION_ENDPOINT");
+        if (changed.currency && changed.currency !== before.currency) {
+          const [history] = await rows(
+            c,
+            "SELECT id FROM savings_contribution WHERE goal_id=$1 LIMIT 1",
+            [args.id],
+          );
+          if (units(before.current_amount) > BigInt(0) || history)
+            throw new ChatError(409, "GOAL_CURRENCY_IN_USE");
+        }
+      }
+      Object.assign(data, changed);
+      if (op.toolName === tool) op.arguments = args;
       await validateEntity(c, s, entity, data, args.id || generatedId, pre);
       const fields = dbFields(tool.startsWith("create_") ? args : args.patch);
       result = tool.startsWith("create_")
@@ -519,15 +591,51 @@ export async function executeOperation(
             ...fields,
             updated_at: new Date(),
           });
+      if (
+        entity === "savings_goal" &&
+        tool.startsWith("create_") &&
+        units(result.current_amount) > BigInt(0)
+      ) {
+        await c.query(
+          "INSERT INTO savings_contribution(goal_id,amount,client_request_id,request_hash,created_by) VALUES($1,$2,$3,$4,$5)",
+          [
+            result.id,
+            result.current_amount,
+            result.id,
+            hash({ amount: result.current_amount }),
+            s.userId,
+          ],
+        );
+      }
     }
   }
-  const saved = publicRecord(result);
+  let saved = publicRecord(result);
+  if (tool.endsWith("_transaction") && !result.deleted)
+    saved = (
+      await (await import("./views")).enrichTransactions(c, s, [result])
+    )[0];
+  if (result.id && !result.deleted) {
+    const { enrichRecords } = await import("./views");
+    const entity = Object.entries(entities).find(
+      ([, config]) =>
+        config.table ===
+        (tool === "contribute_savings_goal"
+          ? "savings_goal"
+          : tool.split("_").slice(1).join("_") === "account"
+            ? "finance_account"
+            : tool.split("_").slice(1).join("_") === "subscription"
+              ? "subscription_tracking"
+              : tool.split("_").slice(1).join("_")),
+    )?.[0] as Entity | undefined;
+    if (entity) saved = (await enrichRecords(c, s, entity, [result]))[0];
+  }
   if (tool === "update_preferences") {
     for (const key of Object.keys(saved))
       if (
         ![
           "id",
           "name",
+          "avatarSymbol",
           "baseCurrency",
           "country",
           "numberFormat",
@@ -542,6 +650,7 @@ export async function executeOperation(
     ["accountId", "finance_account", "account"],
     ["toAccountId", "finance_account", "destination"],
     ["categoryId", "category", "category"],
+    ["defaultCategoryId", "category", "defaultCategory"],
     ["parentId", "category", "parent"],
     ["payeeId", "payee", "payee"],
     ["subscriptionId", "subscription_tracking", "subscription"],
@@ -568,6 +677,7 @@ export async function executeOperation(
               [
                 "id",
                 "name",
+                "avatarSymbol",
                 "baseCurrency",
                 "country",
                 "numberFormat",
@@ -600,7 +710,7 @@ export async function readTool(
       c,
       s.organizationId
         ? "SELECT id,name,base_currency,country,number_format,timezone,version FROM organization WHERE id=$1"
-        : 'SELECT id,name,base_currency,country,number_format,version FROM "user" WHERE id=$1',
+        : 'SELECT id,name,avatar_symbol,base_currency,country,number_format,version FROM "user" WHERE id=$1',
       [s.organizationId || s.userId],
     );
     return publicRecord(u);
@@ -612,7 +722,11 @@ export async function readTool(
       [s.userId],
     );
   if (name === "get_transaction")
-    return publicRecord(await scoped(c, "transaction", a.id, s));
+    return (
+      await (
+        await import("./views")
+      ).enrichTransactions(c, s, [await scoped(c, "transaction", a.id, s)])
+    )[0];
   if (name === "search_transactions") {
     const condition = scopeWhere(s);
     const values: unknown[] = [...condition.values];
@@ -732,7 +846,13 @@ export async function readTool(
   if (name.startsWith("get_")) {
     const entity = name.slice(4) as Entity;
     if (entities[entity])
-      return publicRecord(await scoped(c, entities[entity].table, a.id, s));
+      return (
+        await (
+          await import("./views")
+        ).enrichRecords(c, s, entity, [
+          await scoped(c, entities[entity].table, a.id, s),
+        ])
+      )[0];
   }
   if (name.startsWith("list_")) {
     const plural = name.slice(5);
@@ -757,11 +877,15 @@ export async function readTool(
         `SELECT * FROM "${config.table}" WHERE ${where} ORDER BY id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, a.limit, a.offset],
       );
-      // Do not disclose payee contact data in lookup results.
-      return result.map((r) => {
-        if (entity === "payee")
-          return { id: r.id, name: r.name, isArchived: r.is_archived };
-        return publicRecord(r);
+      const enriched = await (
+        await import("./views")
+      ).enrichRecords(c, s, entity, result);
+      return enriched.map((r) => {
+        if (entity === "payee") {
+          const { email, phone, address, ...minimal } = r;
+          return minimal;
+        }
+        return r;
       });
     }
   }
