@@ -9,7 +9,24 @@ export const currency = z
   .length(3)
   .refine((v) => !!currencies.code(v), "Unsupported ISO currency");
 const date = z.string().datetime({ offset: true });
-const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+export const color = z
+  .string()
+  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+  .transform((value) => {
+    const hex = value.slice(1);
+    return (
+      "#" +
+      (hex.length === 3
+        ? hex
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : hex
+      ).toUpperCase()
+    );
+  });
+const icon = z.string().trim().min(1).max(100);
+const brand = z.string().trim().min(1).max(100).nullable().optional();
 const nullableId = uuid.nullable().optional();
 const transactionFields = {
   amount: money,
@@ -17,6 +34,7 @@ const transactionFields = {
   type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
   date,
   description: text.nullable().optional(),
+  notes: text.nullable().optional(),
   accountId: uuid,
   toAccountId: nullableId,
   categoryId: nullableId,
@@ -49,6 +67,18 @@ export const entities = {
         currency: currency.default("USD"),
         currentBalance: nonnegativeMoney.default("0"),
         isDefault: z.boolean().optional(),
+        institution: name.nullable().optional(),
+        accountMask: z
+          .string()
+          .regex(/^[A-Za-z0-9*• -]{1,8}$/)
+          .nullable()
+          .optional(),
+        color: color.nullable().optional(),
+        cardNetwork: z.string().trim().min(1).max(40).nullable().optional(),
+        subtype: z
+          .enum(["CHECKING", "SAVINGS", "INVESTMENT"])
+          .nullable()
+          .optional(),
       })
       .strict(),
   },
@@ -61,13 +91,22 @@ export const entities = {
         type: z.enum(["EXPENSE", "INCOME"]).default("EXPENSE"),
         color: color.default("#9CA3AF"),
         parentId: nullableId,
+        iconName: icon.optional(),
+        monthlyBudget: nonnegativeMoney.nullable().optional(),
+        budgetCurrency: currency.nullable().optional(),
       })
       .strict(),
   },
   tag: {
     table: "tag",
     path: "/tags",
-    fields: z.object({ name, color: color.default("#000000") }).strict(),
+    fields: z
+      .object({
+        name,
+        color: color.default("#000000"),
+        iconName: icon.default("tag.fill"),
+      })
+      .strict(),
   },
   payee: {
     table: "payee",
@@ -80,6 +119,10 @@ export const entities = {
         address: text.nullable().optional(),
         description: text.nullable().optional(),
         isArchived: z.boolean().optional(),
+        iconName: icon.default("person.crop.circle.fill"),
+        color: color.nullable().optional(),
+        brandKey: brand,
+        defaultCategoryId: nullableId,
       })
       .strict(),
   },
@@ -89,6 +132,10 @@ export const entities = {
     fields: z
       .object({
         title: name,
+        brandKey: brand,
+        color: color.nullable().optional(),
+        iconName: icon.nullable().optional(),
+        autoRenew: z.boolean().default(true),
         description: text.nullable().optional(),
         amount: money,
         currency: currency.default("USD"),
@@ -125,7 +172,32 @@ export const entities = {
         title: name,
         description: text.nullable().optional(),
         dueDate: date,
+        amount: nonnegativeMoney.nullable().optional(),
+        currency: currency.optional(),
+        frequency: z
+          .enum(["ONCE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"])
+          .default("ONCE"),
+        notifyDaysBefore: z.number().int().min(0).max(365).default(2),
+        isEnabled: z.boolean().default(true),
+        iconName: icon.default("bell.fill"),
+        accountId: nullableId,
         status: z.enum(["PENDING", "COMPLETED", "SKIPPED"]).default("PENDING"),
+      })
+      .strict(),
+  },
+  savings_goal: {
+    table: "savings_goal",
+    path: "/savings",
+    fields: z
+      .object({
+        title: name,
+        targetAmount: money,
+        currentAmount: nonnegativeMoney.default("0"),
+        currency,
+        deadline: date.nullable().optional(),
+        iconName: icon.default("target"),
+        color: color.default("#9CA3AF"),
+        category: name.default("General"),
       })
       .strict(),
   },
@@ -179,7 +251,10 @@ for (const [entity, config] of Object.entries(entities)) {
     z
       .object({
         id: uuid,
-        patch: (config.fields as z.AnyZodObject)
+        patch: (entity === "savings_goal"
+          ? (config.fields as z.AnyZodObject).omit({ currentAmount: true })
+          : (config.fields as z.AnyZodObject)
+        )
           .partial()
           .strict()
           .refine((v: Record<string, unknown>) => Object.keys(v).length > 0),
@@ -196,6 +271,12 @@ for (const [entity, config] of Object.entries(entities)) {
       `Preview deleting a ${entity}; referenced records cannot be deleted except tags, whose references are removed.`,
     );
 }
+add(
+  "contribute_savings_goal",
+  z.object({ id: uuid, amount: money, clientRequestId: uuid }).strict(),
+  true,
+  "Preview a savings allocation. Does not move bank money. clientRequestId makes a contribution retry-safe.",
+);
 add(
   "archive_payee",
   z.object({ id: uuid }).strict(),
@@ -351,6 +432,7 @@ add(
   z
     .object({
       name: name.optional(),
+      avatarSymbol: icon.nullable().optional(),
       baseCurrency: currency.optional(),
       country: z
         .string()

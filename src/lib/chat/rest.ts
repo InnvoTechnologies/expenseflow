@@ -1,7 +1,10 @@
 // The regular app and copilot share domain validation, authorization and execution.
 import { pool } from "@/db/drizzle";
 import { atomic, authorize, body, endpoint, Scope, uuid } from "./core";
-import { executeOperation, deleteEntity } from "./finance";
+import { executeOperation, deleteEntity, scoped } from "./finance";
+import { entities, Entity } from "./tools";
+import { enrichRecords, ownershipSql } from "./views";
+import { rows } from "./core";
 import { scopeLock } from "./actions";
 export async function requestScope(
   req: Request,
@@ -42,6 +45,9 @@ function normalize(input: any): any {
           "currentBalance",
           "destinationAmount",
           "exchangeRate",
+          "monthlyBudget",
+          "targetAmount",
+          "currentAmount",
         ].includes(key) &&
         typeof value === "number"
       )
@@ -53,6 +59,7 @@ function normalize(input: any): any {
           "payeeId",
           "subscriptionId",
           "parentId",
+          "defaultCategoryId",
         ].includes(key) &&
         value === ""
       )
@@ -105,5 +112,30 @@ export async function mutate(req: Request, toolName: string, id?: string) {
         ? { success: true }
         : result.resource || result;
     });
+  });
+}
+
+export async function listEntity(req: Request, entity: Entity) {
+  return endpoint(req, async (userId) => {
+    const scope = await requestScope(req, userId),
+      config = entities[entity],
+      where = ownershipSql(scope);
+    const records = await rows(
+      pool,
+      `SELECT * FROM "${config.table}" WHERE ${where.sql} ORDER BY created_at DESC,id`,
+      where.values,
+    );
+    return enrichRecords(pool, scope, entity, records);
+  });
+}
+export async function getEntity(req: Request, entity: Entity, id: string) {
+  return endpoint(req, async (userId) => {
+    uuid.parse(id);
+    const scope = await requestScope(req, userId);
+    return (
+      await enrichRecords(pool, scope, entity, [
+        await scoped(pool, entities[entity].table, id, scope),
+      ])
+    )[0];
   });
 }

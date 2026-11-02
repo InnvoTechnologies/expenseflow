@@ -1,8 +1,12 @@
-import { mutate } from "@/lib/chat/rest";
+import { mutate, getEntity } from "@/lib/chat/rest";
 type Context = { params: Promise<{ id: string }> };
 export async function PATCH(req: Request, ctx: Context) {
   return mutate(req, "update_payee", (await ctx.params).id);
 }
 export async function DELETE(req: Request, ctx: Context) {
   return mutate(req, "delete_payee", (await ctx.params).id);
+}
+
+export async function GET(req: Request, ctx: Context) {
+  return getEntity(req, "payee", (await ctx.params).id);
 }

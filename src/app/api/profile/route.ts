@@ -15,20 +15,30 @@ export async function GET(req: Request) {
         )
       : await rows(
           pool,
-          'SELECT base_currency,country,number_format FROM "user" WHERE id=$1',
+          'SELECT name,image,avatar_symbol,base_currency,country,number_format FROM "user" WHERE id=$1',
           [userId],
         );
-    return publicRecord(r);
+    const personal = s.organizationId
+      ? (
+          await rows(
+            pool,
+            'SELECT name,image,avatar_symbol FROM "user" WHERE id=$1',
+            [userId],
+          )
+        )[0]
+      : {};
+    return publicRecord({ ...r, ...personal });
   });
 }
 export async function PATCH(req: Request) {
   return endpoint(req, async (userId) => {
-    const s = await requestScope(req, userId, true);
+    const s = await requestScope(req, userId);
     const a = z
       .object({
         firstName: z.string().max(100).optional(),
         lastName: z.string().max(100).optional(),
         name: z.string().max(160).optional(),
+        avatarSymbol: z.string().trim().min(1).max(100).nullable().optional(),
         baseCurrency: z.string().optional(),
         country: z.string().optional(),
         numberFormat: z.number().optional(),
@@ -42,14 +52,19 @@ export async function PATCH(req: Request) {
         (a.firstName !== undefined || a.lastName !== undefined
           ? [a.firstName, a.lastName].filter(Boolean).join(" ").trim()
           : undefined);
-      if (name !== undefined)
+      if (name !== undefined || a.avatarSymbol !== undefined)
         await executeOperation(
           c,
           { userId, organizationId: null },
           {
             toolName: "update_preferences",
             toolCallId: crypto.randomUUID(),
-            arguments: { name },
+            arguments: {
+              ...(name !== undefined ? { name } : {}),
+              ...(a.avatarSymbol !== undefined
+                ? { avatarSymbol: a.avatarSymbol }
+                : {}),
+            },
           },
         );
       const settings = Object.fromEntries(

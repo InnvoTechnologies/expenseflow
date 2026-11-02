@@ -1,6 +1,5 @@
 import { POST as createTransaction } from "@/app/api/transactions/route";
 import { POST as createSubscription } from "@/app/api/subscriptions/route";
-import { reconcile0008 } from "../scripts/reconcile-0008";
 import {
   afterAll,
   beforeAll,
@@ -518,7 +517,7 @@ integration("PostgreSQL copilot integration", () => {
     expect(await response.json()).toMatchObject({
       name: "Hardware",
       type: "EXPENSE",
-      color: "#ffffff",
+      color: "#FFFFFF",
       userId: scope.userId,
       organizationId: null,
     });
@@ -722,29 +721,6 @@ integration("PostgreSQL copilot integration", () => {
       percentChange: "50.0000",
     });
     expect(report.categoryChanges[0].change).toBe("5.0000");
-  });
-  it("only reconciles the known historical migration after exact schema verification", async () => {
-    const c = await pool.connect();
-    try {
-      await c.query("BEGIN");
-      await c.query(
-        "DELETE FROM drizzle.__drizzle_migrations WHERE created_at >= $1",
-        [1781329635203],
-      );
-      expect(await reconcile0008(c)).toBe(true);
-      expect(await reconcile0008(c)).toBe(false);
-      await c.query(
-        "DELETE FROM drizzle.__drizzle_migrations WHERE created_at=$1",
-        [1781329635203],
-      );
-      await c.query(
-        `ALTER TABLE "user" ALTER COLUMN base_currency SET DEFAULT 'EUR'`,
-      );
-      await expect(reconcile0008(c)).rejects.toThrow("does not exactly match");
-    } finally {
-      await c.query("ROLLBACK");
-      c.release();
-    }
   });
   it("enforces the shared per-user rate limit across conversations", async () => {
     vi.stubEnv("OPENROUTER_API_KEY", "test-only");

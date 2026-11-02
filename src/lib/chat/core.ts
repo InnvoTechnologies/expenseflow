@@ -165,6 +165,8 @@ export function failure(error: unknown): Response {
   const code = (error as { code?: string })?.code;
   if (code === "23505" || code === "40001" || code === "40P01")
     return Response.json({ error: "CONFLICT" }, { status: 409 });
+  if (code === "22003")
+    return Response.json({ error: "AMOUNT_OUT_OF_RANGE" }, { status: 400 });
   if (code === "23503" || code === "23514")
     return Response.json({ error: "RESOURCE_CONSTRAINT" }, { status: 409 });
   console.error("Chat failure", {
